@@ -1,41 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
-import HomePage from './pages/HomePage';
-import AuthPage from './pages/AuthPage';
-import AdminDashboard from './pages/AdminDashboard';
-import InventoryPage from './pages/InventoryPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
+import HomePage from "./pages/HomePage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
+import AuthPage from "./pages/AuthPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-
-
-import './styles/App.css';
-
-const NotAuthorized = ({ message }) => (
-  <div className="container" style={{ paddingTop: '2rem' }}>
-    <div className="card">
-      <h2 style={{ marginTop: 0 }}>Access restricted</h2>
-      <p style={{ marginBottom: 0 }}>
-        {message || 'You need to be signed in with the correct role to view this page.'}
-      </p>
-    </div>
-  </div>
-);
+import AdminDashboard from "./pages/AdminDashboard";
+import InventoryPage from "./pages/InventoryPage";
 
 function App() {
-  const [theme, setTheme] = useState('light');
-  const [user, setUser] = useState(null); // { name, email, role } | null
+  const [theme, setTheme] = useState("light");
+  const [user, setUser] = useState(null);
 
+  // Apply theme to <html data-theme="...">
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  const handleThemeChange = (nextTheme) => {
-    setTheme(nextTheme);
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
   const handleSignIn = (userData) => {
@@ -50,43 +37,49 @@ function App() {
     <div className="app">
       <Navbar
         theme={theme}
-        onThemeChange={handleThemeChange}
+        onToggleTheme={handleToggleTheme}
         user={user}
         onSignOut={handleSignOut}
       />
 
       <main className="app-main">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
+        <div className="container">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
 
-          <Route path="/auth" element={<AuthPage onSignIn={handleSignIn} />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/auth" element={<AuthPage onSignIn={handleSignIn} />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
+            {/* Admin-only dashboard */}
+            <Route
+              path="/admin"
+              element={
+                user && user.role === "admin" ? (
+                  <AdminDashboard user={user} />
+                ) : (
+                  <Navigate to="/auth" replace />
+                )
+              }
+            />
 
-          <Route
-            path="/inventory"
-            element={
-              user ? (
-                <InventoryPage user={user} />
-              ) : (
-                <NotAuthorized message="Please sign in to view your inventory." />
-              )
-            }
-          />
+            {/* Inventory page: any logged-in user */}
+            <Route
+              path="/inventory"
+              element={
+                user ? (
+                  <InventoryPage user={user} />
+                ) : (
+                  <Navigate to="/auth" replace />
+                )
+              }
+            />
 
-          <Route
-            path="/admin"
-            element={
-              user?.role === 'admin' ? (
-                <AdminDashboard />
-              ) : (
-                <NotAuthorized message="You must be signed in as an admin to view the dashboard." />
-              )
-            }
-          />
-        </Routes>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
       </main>
 
       <Footer />
