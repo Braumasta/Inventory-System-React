@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import '../styles/Navbar.css';
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import "../styles/Navbar.css";
 
 // Simple professional-looking icons using SVG
 const SunIcon = () => (
@@ -47,11 +47,11 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
   const [isProfileOpen, setProfileOpen] = useState(false);
   const [isMobileOpen, setMobileOpen] = useState(false);
 
-  const isOnInventory = location.pathname.startsWith('/inventory');
-  const isOnAdmin = location.pathname.startsWith('/admin');
+  const isOnInventory = location.pathname.startsWith("/inventory");
+  const isOnAdmin = location.pathname.startsWith("/admin");
 
   const toggleTheme = () => {
-    onThemeChange(theme === 'light' ? 'dark' : 'light');
+    onThemeChange(theme === "light" ? "dark" : "light");
   };
 
   const handleSignOutClick = () => {
@@ -62,12 +62,12 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
 
   const initials = user?.name
     ? user.name
-        .split(' ')
+        .split(" ")
         .map((part) => part[0])
-        .join('')
+        .join("")
         .slice(0, 2)
         .toUpperCase()
-    : 'U';
+    : "U";
 
   return (
     <header className="navbar">
@@ -104,7 +104,7 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
             </Link>
           )}
 
-          {user?.role === 'admin' && (
+          {user?.role === "admin" && (
             <Link
               to="/admin"
               className="nav-link"
@@ -121,7 +121,7 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
           onClick={toggleTheme}
           aria-label="Toggle theme"
         >
-          {theme === 'light' ? <SunIcon /> : <MoonIcon />}
+          {theme === "light" ? <SunIcon /> : <MoonIcon />}
         </button>
 
         {/* Desktop auth section (hidden on mobile via CSS) */}
@@ -141,11 +141,11 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
                     <div style={{ fontWeight: 600 }}>{user.name}</div>
                     <div className="dropdown-subtitle">{user.email}</div>
                     <div className="dropdown-badge">
-                      {user.role === 'admin' ? 'Admin' : 'Employee'}
+                      {user.role === "admin" ? "Admin" : "Employee"}
                     </div>
                   </div>
 
-                  {user?.role === 'admin' ? (
+                  {user?.role === "admin" ? (
                     <>
                       <Link
                         to="/admin"
@@ -200,10 +200,18 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
       {/* Mobile menu */}
       {isMobileOpen && (
         <div className="nav-mobile">
-          <Link to="/about" className="nav-mobile-link" onClick={() => setMobileOpen(false)}>
+          <Link
+            to="/about"
+            className="nav-mobile-link"
+            onClick={() => setMobileOpen(false)}
+          >
             About
           </Link>
-          <Link to="/contact" className="nav-mobile-link" onClick={() => setMobileOpen(false)}>
+          <Link
+            to="/contact"
+            className="nav-mobile-link"
+            onClick={() => setMobileOpen(false)}
+          >
             Contact
           </Link>
 
@@ -217,7 +225,7 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
             </Link>
           )}
 
-          {user?.role === 'admin' && (
+          {user?.role === "admin" && (
             <Link
               to="/admin"
               className="nav-mobile-link"
@@ -227,24 +235,29 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
             </Link>
           )}
 
-          {/* Theme inside collapsible menu on mobile */}
+          {/* Theme toggle inside collapsible menu, same style as links */}
           <button
             type="button"
-            className="nav-mobile-link"
-            onClick={() => {
-              toggleTheme();
-            }}
+            className="nav-mobile-link nav-mobile-theme"
+            onClick={toggleTheme}
           >
-            {theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            {theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
           </button>
 
-          {/* Auth inside mobile menu */}
+          {/* Auth inside mobile menu, same look as other items */}
           {!user ? (
-            <Link to="/auth" className="nav-mobile-link" onClick={() => setMobileOpen(false)}>
+            <Link
+              to="/auth"
+              className="nav-mobile-link"
+              onClick={() => setMobileOpen(false)}
+            >
               Sign in
             </Link>
           ) : (
-            <button className="nav-mobile-button danger" onClick={handleSignOutClick}>
+            <button
+              className="nav-mobile-button danger"
+              onClick={handleSignOutClick}
+            >
               Sign out
             </button>
           )}

@@ -18,9 +18,19 @@
   z-index: 50;
 }
 
+/* Left: logo + brand */
+
 .navbar-left {
   display: flex;
   align-items: center;
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
 }
 
 .logo-placeholder {
@@ -49,14 +59,6 @@
 .brand-subtitle {
   font-size: 0.75rem;
   color: var(--text-muted);
-}
-
-.brand-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  text-decoration: none;
-  color: inherit;
 }
 
 /* Right side of navbar */
@@ -116,6 +118,14 @@
   justify-content: center;
   cursor: pointer;
   font-size: 1rem;
+  color: var(--text);
+}
+
+/* Make theme icon more visible in dark mode */
+[data-theme="dark"] .theme-toggle-button {
+  color: #f9fafb;
+  border-color: rgba(148, 163, 184, 0.8);
+  background-color: rgba(15, 23, 42, 0.6);
 }
 
 /* Auth section */
@@ -217,7 +227,7 @@
   color: #dc2626;
 }
 
-/* Mobile nav toggle */
+/* Mobile nav toggle (hamburger) */
 
 .nav-toggle {
   width: 34px;
@@ -225,7 +235,7 @@
   border-radius: 999px;
   border: 1px solid var(--border);
   background-color: rgba(15, 23, 42, 0.02);
-  display: flex;
+  display: none;
   flex-direction: column;
   justify-content: center;
   gap: 4px;
@@ -235,14 +245,29 @@
 
 .nav-toggle span {
   width: 18px;
-  height: 2px;
+  height: 2.5px;
   border-radius: 999px;
   background-color: var(--text);
-  margin: 0 auto;
+  display: block;
 }
 
-@media (min-width: 768px) {
+/* Mobile / desktop behavior */
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+  }
+
   .nav-toggle {
+    display: flex;
+  }
+
+  /* hide desktop theme button and desktop auth section on mobile */
+  .theme-toggle-button {
+    display: none;
+  }
+
+  .auth-section {
     display: none;
   }
 }
@@ -268,7 +293,17 @@
   padding: 0.35rem 0.3rem;
   text-decoration: none;
   color: var(--text);
+  text-align: left;
+  border: none;
+  background: none;
 }
+
+/* Theme line in mobile menu uses same style as other links */
+.nav-mobile-theme {
+  cursor: pointer;
+}
+
+/* Mobile sign out button style */
 
 .nav-mobile-button {
   margin-top: 0.3rem;
@@ -284,23 +319,4 @@
 .nav-mobile-button.danger {
   border-color: #dc2626;
   color: #dc2626;
-}
-
-@media (max-width: 768px) {
-  .nav-links {
-    display: none;
-  }
-
-  .nav-toggle {
-    display: block;
-  }
-
-  /* hide desktop theme button and desktop auth section on mobile */
-  .theme-toggle-button {
-    display: none;
-  }
-
-  .auth-section {
-    display: none;
-  }
 }
