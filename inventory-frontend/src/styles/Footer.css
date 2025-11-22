@@ -56,11 +56,37 @@
   background-color: var(--bg);
   color: var(--text);
   transition: all 0.15s ease;
+  padding: 0;
 }
 
-.social-icon:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+/* Center SVGs inside circle */
+.social-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* Hover behaviors per brand */
+.social-icon--facebook:hover {
+  color: #1877f2; /* FB blue */
+  border-color: #1877f2;
+  transform: translateY(-2px);
+}
+
+.social-icon--x:hover {
+  color: #000000; /* X logo black */
+  border-color: #000000;
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .social-icon--x:hover {
+  color: #f9fafb;        /* look white on dark bg */
+  border-color: #f9fafb;
+}
+
+.social-icon--linkedin:hover {
+  color: #0a66c2; /* LinkedIn blue */
+  border-color: #0a66c2;
   transform: translateY(-2px);
 }
 

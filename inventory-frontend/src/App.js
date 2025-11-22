@@ -10,6 +10,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import InventoryPage from './pages/InventoryPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+
 
 import './styles/App.css';
 
@@ -58,6 +60,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
 
           <Route path="/auth" element={<AuthPage onSignIn={handleSignIn} />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />

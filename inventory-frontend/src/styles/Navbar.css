@@ -37,13 +37,16 @@
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  border: 2px dashed var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 0.8rem;
-  color: var(--primary);
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand-text {
@@ -119,6 +122,11 @@
   cursor: pointer;
   font-size: 1rem;
   color: var(--text);
+}
+
+.icon-button svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* Make theme icon more visible in dark mode */
@@ -227,7 +235,7 @@
   color: #dc2626;
 }
 
-/* Mobile nav toggle (hamburger) */
+/* Mobile nav toggle (hamburger / close) */
 
 .nav-toggle {
   width: 34px;
@@ -236,19 +244,23 @@
   border: 1px solid var(--border);
   background-color: rgba(15, 23, 42, 0.02);
   display: none;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  gap: 4px;
   padding: 0;
   cursor: pointer;
+  color: var(--text);
 }
 
-.nav-toggle span {
-  width: 18px;
-  height: 2.5px;
-  border-radius: 999px;
-  background-color: var(--text);
-  display: block;
+.nav-toggle svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Light/dark for hamburger */
+[data-theme="dark"] .nav-toggle {
+  color: #f9fafb;
+  border-color: rgba(148, 163, 184, 0.8);
+  background-color: rgba(15, 23, 42, 0.6);
 }
 
 /* Mobile / desktop behavior */
