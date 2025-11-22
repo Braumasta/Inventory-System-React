@@ -21,7 +21,6 @@
 .navbar-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
 }
 
 .logo-placeholder {
@@ -50,6 +49,14 @@
 .brand-subtitle {
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
 }
 
 /* Right side of navbar */
@@ -277,4 +284,23 @@
 .nav-mobile-button.danger {
   border-color: #dc2626;
   color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+  }
+
+  .nav-toggle {
+    display: block;
+  }
+
+  /* hide desktop theme button and desktop auth section on mobile */
+  .theme-toggle-button {
+    display: none;
+  }
+
+  .auth-section {
+    display: none;
+  }
 }

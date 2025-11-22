@@ -8,8 +8,9 @@ import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import AdminDashboard from './pages/AdminDashboard';
 import InventoryPage from './pages/InventoryPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 
-// optional app-level styles (you moved App.css into styles folder)
 import './styles/App.css';
 
 const NotAuthorized = ({ message }) => (
@@ -25,9 +26,7 @@ const NotAuthorized = ({ message }) => (
 
 function App() {
   const [theme, setTheme] = useState('light');
-
-  // user = null | { name, email, role }
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // { name, email, role } | null
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -38,7 +37,6 @@ function App() {
   };
 
   const handleSignIn = (userData) => {
-    // userData: { name, email, role }
     setUser(userData);
   };
 
@@ -60,6 +58,9 @@ function App() {
           <Route path="/" element={<HomePage />} />
 
           <Route path="/auth" element={<AuthPage onSignIn={handleSignIn} />} />
+
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
           <Route
             path="/inventory"

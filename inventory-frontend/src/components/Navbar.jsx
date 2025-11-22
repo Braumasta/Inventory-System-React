@@ -2,19 +2,56 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/Navbar.css';
 
+// Simple professional-looking icons using SVG
+const SunIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="4" />
+    <line x1="12" y1="2" x2="12" y2="4" />
+    <line x1="12" y1="20" x2="12" y2="22" />
+    <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+    <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+    <line x1="2" y1="12" x2="4" y2="12" />
+    <line x1="20" y1="12" x2="22" y2="12" />
+    <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+    <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 1 0 21 12.79z" />
+  </svg>
+);
+
 const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
   const location = useLocation();
 
   const [isProfileOpen, setProfileOpen] = useState(false);
-  const [isThemeOpen, setThemeOpen] = useState(false);
   const [isMobileOpen, setMobileOpen] = useState(false);
 
   const isOnInventory = location.pathname.startsWith('/inventory');
   const isOnAdmin = location.pathname.startsWith('/admin');
 
-  const handleThemeSelect = (mode) => {
-    onThemeChange(mode);
-    setThemeOpen(false);
+  const toggleTheme = () => {
+    onThemeChange(theme === 'light' ? 'dark' : 'light');
   };
 
   const handleSignOutClick = () => {
@@ -35,25 +72,27 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
   return (
     <header className="navbar">
       <div className="navbar-left">
-        <div className="logo-placeholder">
-          {/* Replace with your logo later */}
-          LOGO
-        </div>
-        <div className="brand-text">
-          <span className="brand-title">InventorySphere</span>
-          <span className="brand-subtitle">Multi-tenant inventory for teams</span>
-        </div>
+        <Link to="/" className="brand-link">
+          <div className="logo-placeholder">
+            {/* Replace with your logo later */}
+            LOGO
+          </div>
+          <div className="brand-text">
+            <span className="brand-title">InventorySphere</span>
+            <span className="brand-subtitle">Multi-tenant inventory for teams</span>
+          </div>
+        </Link>
       </div>
 
       <div className="navbar-right">
         {/* Desktop nav links */}
         <nav className="nav-links">
-          <a href="#about" className="nav-link">
+          <Link to="/about" className="nav-link">
             About
-          </a>
-          <a href="#contact" className="nav-link">
+          </Link>
+          <Link to="/contact" className="nav-link">
             Contact
-          </a>
+          </Link>
 
           {user && (
             <Link
@@ -76,48 +115,23 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
           )}
         </nav>
 
-        {/* Theme dropdown */}
-        <div className="nav-dropdown-wrapper">
-          <button
-            className="icon-button"
-            onClick={() => {
-              setThemeOpen((prev) => !prev);
-              setProfileOpen(false);
-            }}
-            aria-label="Theme settings"
-          >
-            {theme === 'light' ? '🌞' : '🌙'}
-          </button>
-          {isThemeOpen && (
-            <div className="dropdown-menu">
-              <div className="dropdown-header">Theme</div>
-              <button
-                className={`dropdown-item ${theme === 'light' ? 'active' : ''}`}
-                onClick={() => handleThemeSelect('light')}
-              >
-                Light
-              </button>
-              <button
-                className={`dropdown-item ${theme === 'dark' ? 'active' : ''}`}
-                onClick={() => handleThemeSelect('dark')}
-              >
-                Dark
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Desktop theme toggle (icon only, no dropdown) */}
+        <button
+          className="icon-button theme-toggle-button"
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+        >
+          {theme === 'light' ? <SunIcon /> : <MoonIcon />}
+        </button>
 
-        {/* Auth section */}
+        {/* Desktop auth section (hidden on mobile via CSS) */}
         <div className="auth-section">
           {user ? (
             <div className="nav-dropdown-wrapper">
               <div
                 className="avatar"
                 title={user.name}
-                onClick={() => {
-                  setProfileOpen((prev) => !prev);
-                  setThemeOpen(false);
-                }}
+                onClick={() => setProfileOpen((prev) => !prev)}
               >
                 {initials}
               </div>
@@ -174,11 +188,7 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
         {/* Mobile hamburger */}
         <button
           className="nav-toggle"
-          onClick={() => {
-            setMobileOpen((prev) => !prev);
-            setProfileOpen(false);
-            setThemeOpen(false);
-          }}
+          onClick={() => setMobileOpen((prev) => !prev)}
           aria-label="Toggle navigation"
         >
           <span />
@@ -190,12 +200,12 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
       {/* Mobile menu */}
       {isMobileOpen && (
         <div className="nav-mobile">
-          <a href="#about" className="nav-mobile-link" onClick={() => setMobileOpen(false)}>
+          <Link to="/about" className="nav-mobile-link" onClick={() => setMobileOpen(false)}>
             About
-          </a>
-          <a href="#contact" className="nav-mobile-link" onClick={() => setMobileOpen(false)}>
+          </Link>
+          <Link to="/contact" className="nav-mobile-link" onClick={() => setMobileOpen(false)}>
             Contact
-          </a>
+          </Link>
 
           {user && (
             <Link
@@ -217,8 +227,20 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
             </Link>
           )}
 
+          {/* Theme inside collapsible menu on mobile */}
+          <button
+            type="button"
+            className="nav-mobile-link"
+            onClick={() => {
+              toggleTheme();
+            }}
+          >
+            {theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          </button>
+
+          {/* Auth inside mobile menu */}
           {!user ? (
-            <Link to="/auth" className="nav-mobile-button" onClick={() => setMobileOpen(false)}>
+            <Link to="/auth" className="nav-mobile-link" onClick={() => setMobileOpen(false)}>
               Sign in
             </Link>
           ) : (
