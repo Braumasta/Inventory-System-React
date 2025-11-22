@@ -1,0 +1,162 @@
+/* ========== Admin Dashboard ========== */
+
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.dashboard-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.dashboard-tagline {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Stats cards */
+
+.stats-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.stats-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.stats-value {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0.2rem 0;
+}
+
+.stats-pill {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background-color: var(--primary-soft);
+  color: var(--primary);
+  display: inline-block;
+}
+
+/* Two-column layout */
+
+.dashboard-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 992px) {
+  .dashboard-grid {
+    grid-template-columns: 1.1fr 1.4fr;
+  }
+}
+
+/* New products list */
+
+.new-products-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.new-product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.new-product-item:last-child {
+  border-bottom: none;
+}
+
+.new-product-name {
+  font-size: 0.9rem;
+}
+
+.new-product-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Table controls */
+
+.table-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.table-controls input {
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+/* Table */
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.inventory-table th,
+.inventory-table td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+}
+
+.inventory-table th {
+  background-color: var(--bg-soft);
+}
+
+/* Team / employees section */
+
+.dashboard-team-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+  .dashboard-team-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

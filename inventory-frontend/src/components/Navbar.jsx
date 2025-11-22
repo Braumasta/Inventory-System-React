@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import '../styles/Navbar.css';
 
-const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
+const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
   const location = useLocation();
 
   const [isProfileOpen, setProfileOpen] = useState(false);
@@ -35,7 +36,7 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
     <header className="navbar">
       <div className="navbar-left">
         <div className="logo-placeholder">
-          {/* Replace with your logo image later */}
+          {/* Replace with your logo later */}
           LOGO
         </div>
         <div className="brand-text">
@@ -44,8 +45,8 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
         </div>
       </div>
 
-      {/* Desktop links */}
       <div className="navbar-right">
+        {/* Desktop nav links */}
         <nav className="nav-links">
           <a href="#about" className="nav-link">
             About
@@ -54,7 +55,6 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
             Contact
           </a>
 
-          {/* Show Inventory only when logged in */}
           {user && (
             <Link
               to="/inventory"
@@ -65,7 +65,6 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
             </Link>
           )}
 
-          {/* Show Dashboard only for admins and only when logged in */}
           {user?.role === 'admin' && (
             <Link
               to="/admin"
@@ -77,7 +76,7 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
           )}
         </nav>
 
-        {/* Theme button with dropdown */}
+        {/* Theme dropdown */}
         <div className="nav-dropdown-wrapper">
           <button
             className="icon-button"
@@ -132,7 +131,6 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
                     </div>
                   </div>
 
-                  {/* Links depend on role */}
                   {user?.role === 'admin' ? (
                     <>
                       <Link
@@ -167,13 +165,13 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
               )}
             </div>
           ) : (
-            <button className="btn-primary" onClick={onSignIn}>
+            <Link to="/auth" className="btn-primary nav-button-link">
               Sign in
-            </button>
+            </Link>
           )}
         </div>
 
-        {/* Mobile menu toggle */}
+        {/* Mobile hamburger */}
         <button
           className="nav-toggle"
           onClick={() => {
@@ -189,7 +187,7 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
         </button>
       </div>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile menu */}
       {isMobileOpen && (
         <div className="nav-mobile">
           <a href="#about" className="nav-mobile-link" onClick={() => setMobileOpen(false)}>
@@ -220,15 +218,9 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
           )}
 
           {!user ? (
-            <button
-              className="nav-mobile-button"
-              onClick={() => {
-                onSignIn();
-                setMobileOpen(false);
-              }}
-            >
+            <Link to="/auth" className="nav-mobile-button" onClick={() => setMobileOpen(false)}>
               Sign in
-            </button>
+            </Link>
           ) : (
             <button className="nav-mobile-button danger" onClick={handleSignOutClick}>
               Sign out
@@ -241,4 +233,3 @@ const Navbar = ({ theme, onThemeChange, user, onSignIn, onSignOut }) => {
 };
 
 export default Navbar;
-

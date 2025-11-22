@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../styles/Dashboard.css';
 
 const mockNewProducts = [
   { name: 'Wireless Mouse Pro', daysAgo: 1, sku: 'WM-9021' },
@@ -31,9 +32,19 @@ const mockRows = [
   }
 ];
 
+const initialEmployees = [
+  { id: 1, name: 'Omar Khalil', email: 'omar@example.com', role: 'employee', status: 'Active' },
+  { id: 2, name: 'Sara Nasser', email: 'sara@example.com', role: 'employee', status: 'Active' }
+];
+
 const AdminDashboard = () => {
   const [columns, setColumns] = useState(mockColumns);
   const [newColumnName, setNewColumnName] = useState('');
+
+  const [employees, setEmployees] = useState(initialEmployees);
+  const [empName, setEmpName] = useState('');
+  const [empEmail, setEmpEmail] = useState('');
+  const [empRole, setEmpRole] = useState('employee');
 
   const handleAddColumn = () => {
     const trimmed = newColumnName.trim();
@@ -45,8 +56,30 @@ const AdminDashboard = () => {
   };
 
   const handleRemoveColumn = (col) => {
-    if (columns.length <= 3) return; // just to avoid empty tables
+    if (columns.length <= 3) return; // avoid deleting everything
     setColumns(columns.filter((c) => c !== col));
+  };
+
+  const handleAddEmployee = (e) => {
+    e.preventDefault();
+    if (!empName || !empEmail) return;
+
+    const nextId = employees.length ? employees[employees.length - 1].id + 1 : 1;
+
+    const newEmp = {
+      id: nextId,
+      name: empName,
+      email: empEmail,
+      role: empRole,
+      status: 'Pending',
+    };
+
+    setEmployees([...employees, newEmp]);
+    setEmpName('');
+    setEmpEmail('');
+    setEmpRole('employee');
+
+    alert('Employee added (frontend demo). Later this will send a secure invite from the backend.');
   };
 
   return (
@@ -55,16 +88,12 @@ const AdminDashboard = () => {
         <div>
           <h2 className="dashboard-title">Admin dashboard</h2>
           <p className="dashboard-tagline">
-            Overview of inventory health and quick access to configurable tables.
+            Overview of inventory health and quick access to configuration & team access.
           </p>
         </div>
         <div className="dashboard-actions">
-          <button className="btn-ghost">
-            + Add new product
-          </button>
-          <button className="btn-ghost">
-            Export CSV
-          </button>
+          <button className="btn-ghost">+ Add new product</button>
+          <button className="btn-ghost">Export CSV</button>
         </div>
       </header>
 
@@ -89,9 +118,8 @@ const AdminDashboard = () => {
         </div>
       </section>
 
-      {/* New products + table */}
+      {/* New products + inventory table */}
       <section className="dashboard-grid">
-        {/* New products list */}
         <div className="card">
           <h3 style={{ fontSize: '1rem', marginBottom: '0.8rem' }}>
             Newly added (last 7 days)
@@ -108,11 +136,22 @@ const AdminDashboard = () => {
           </ul>
         </div>
 
-        {/* Inventory table */}
         <div className="card">
-          <div style={{ marginBottom: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              marginBottom: '0.6rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
             <h3 style={{ fontSize: '1rem' }}>Inventory manager table</h3>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            <span
+              style={{
+                fontSize: '0.75rem',
+                color: 'var(--text-muted)'
+              }}
+            >
               Admin-configurable columns (frontend demo)
             </span>
           </div>
@@ -129,8 +168,14 @@ const AdminDashboard = () => {
             </button>
           </div>
 
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-            Click a column name to remove it (for demo only).
+          <div
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)',
+              marginBottom: '0.4rem'
+            }}
+          >
+            Click a column name to remove it (demo only).
           </div>
 
           <div className="table-wrapper">
@@ -163,10 +208,96 @@ const AdminDashboard = () => {
             </table>
           </div>
 
-          <div style={{ marginTop: '0.6rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Later, this table will be fully synced with your Node backend and database. Admins will define
-            custom columns that are stored in the DB and applied per organization.
+          <div
+            style={{
+              marginTop: '0.6rem',
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)'
+            }}
+          >
+            Later, this table will be fully synced with your Node backend and database. Admins will
+            define custom columns that are stored in the DB and applied per organization.
           </div>
+        </div>
+      </section>
+
+      {/* Team / employees section */}
+      <section className="card" style={{ marginTop: '1.5rem' }}>
+        <h3 style={{ fontSize: '1rem', marginTop: 0 }}>Team access & employees</h3>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Admins can add employees who will have controlled access to the inventory. In the real
+          system this will be backed by secure APIs, hashed passwords, and role-based permissions.
+        </p>
+
+        <div className="dashboard-team-grid">
+          {/* Employees list */}
+          <div>
+            <h4 style={{ fontSize: '0.9rem', marginBottom: '0.4rem' }}>Existing employees</h4>
+            <div className="table-wrapper">
+              <table className="inventory-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((emp) => (
+                    <tr key={emp.id}>
+                      <td>{emp.name}</td>
+                      <td>{emp.email}</td>
+                      <td>{emp.role}</td>
+                      <td>{emp.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Add employee form */}
+          <form onSubmit={handleAddEmployee} style={{ display: 'grid', gap: '0.5rem' }}>
+            <h4 style={{ fontSize: '0.9rem', marginBottom: '0.2rem' }}>Add employee (demo)</h4>
+            <div>
+              <label className="input-label">Full name</label>
+              <input
+                className="input-field"
+                value={empName}
+                onChange={(e) => setEmpName(e.target.value)}
+                placeholder="Employee name"
+              />
+            </div>
+            <div>
+              <label className="input-label">Email</label>
+              <input
+                className="input-field"
+                type="email"
+                value={empEmail}
+                onChange={(e) => setEmpEmail(e.target.value)}
+                placeholder="employee@example.com"
+              />
+            </div>
+            <div>
+              <label className="input-label">Role</label>
+              <select
+                className="input-field"
+                value={empRole}
+                onChange={(e) => setEmpRole(e.target.value)}
+              >
+                <option value="employee">Employee</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button type="submit" className="btn-primary">
+              Add employee
+            </button>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Later this will send a secure invite link or temporary password via the backend, and
+              only the admin&apos;s authenticated token will be allowed to create users.
+            </div>
+          </form>
         </div>
       </section>
     </div>

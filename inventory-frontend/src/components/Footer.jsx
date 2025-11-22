@@ -1,34 +1,31 @@
 import React from 'react';
+import '../styles/Footer.css';
 
 const Footer = () => {
-  const currentYear = new Date().getFullYear();
   return (
-    <footer className="footer" id="contact">
+    <footer className="footer">
       <div className="footer-inner">
-        <div>
-          <div style={{ fontWeight: 500 }}>InventorySphere</div>
-          <div style={{ color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-            © {currentYear} All rights reserved.
-          </div>
+        <div className="footer-text">
+          © {new Date().getFullYear()} InventorySphere. All rights reserved.
         </div>
 
         <div className="footer-links">
-          <span style={{ color: 'var(--text-muted)' }}>Status</span>
-          <span style={{ color: 'var(--text-muted)' }}>Privacy</span>
-          <span style={{ color: 'var(--text-muted)' }}>Terms</span>
+          <a href="#about" className="footer-link">
+            About
+          </a>
+          <a href="#contact" className="footer-link">
+            Contact
+          </a>
+          <a href="#privacy" className="footer-link">
+            Privacy
+          </a>
         </div>
 
         <div className="footer-social">
-          {/* Later you can add actual links + FontAwesome/React Icons */}
-          <div className="social-icon" title="Facebook">
-            f
-          </div>
-          <div className="social-icon" title="X / Twitter">
-            x
-          </div>
-          <div className="social-icon" title="LinkedIn">
-            in
-          </div>
+          {/* You can replace with real icons later */}
+          <div className="social-icon">f</div>
+          <div className="social-icon">X</div>
+          <div className="social-icon">in</div>
         </div>
       </div>
     </footer>

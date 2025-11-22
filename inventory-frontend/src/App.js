@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
+
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import LandingPage from './pages/LandingPage';
+
+import HomePage from './pages/HomePage';
+import AuthPage from './pages/AuthPage';
 import AdminDashboard from './pages/AdminDashboard';
 import InventoryPage from './pages/InventoryPage';
+
+// optional app-level styles (you moved App.css into styles folder)
+import './styles/App.css';
 
 const NotAuthorized = ({ message }) => (
   <div className="container" style={{ paddingTop: '2rem' }}>
@@ -18,11 +24,9 @@ const NotAuthorized = ({ message }) => (
 );
 
 function App() {
-  // theme: 'light' | 'dark'
   const [theme, setTheme] = useState('light');
 
-  // very simple fake auth for now
-  // later this will come from your Node backend & JWT
+  // user = null | { name, email, role }
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -33,14 +37,9 @@ function App() {
     setTheme(nextTheme);
   };
 
-  const handleSignIn = () => {
-    // For now we just mock an admin login.
-    // Later you'll replace this with real auth (login form + API).
-    setUser({
-      name: 'Admin User',
-      email: 'admin@example.com',
-      role: 'admin', // change to 'employee' to test non-admin behaviour
-    });
+  const handleSignIn = (userData) => {
+    // userData: { name, email, role }
+    setUser(userData);
   };
 
   const handleSignOut = () => {
@@ -53,15 +52,15 @@ function App() {
         theme={theme}
         onThemeChange={handleThemeChange}
         user={user}
-        onSignIn={handleSignIn}
         onSignOut={handleSignOut}
       />
 
       <main className="app-main">
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<HomePage />} />
 
-          {/* Inventory visible only if logged in (any role) */}
+          <Route path="/auth" element={<AuthPage onSignIn={handleSignIn} />} />
+
           <Route
             path="/inventory"
             element={
@@ -73,7 +72,6 @@ function App() {
             }
           />
 
-          {/* Admin dashboard visible only for role === 'admin' */}
           <Route
             path="/admin"
             element={
