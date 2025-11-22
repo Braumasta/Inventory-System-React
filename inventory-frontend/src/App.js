@@ -10,19 +10,18 @@ import ContactPage from "./pages/ContactPage";
 import AuthPage from "./pages/AuthPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AdminDashboard from "./pages/AdminDashboard";
-import InventoryPage from "./pages/InventoryPage";
 
 function App() {
-  const [theme, setTheme] = useState("light");
-  const [user, setUser] = useState(null);
+  const [theme, setTheme] = useState("light"); // 'light' | 'dark'
+  const [user, setUser] = useState(null); // { name, email, role }
 
-  // Apply theme to <html data-theme="...">
+  // Attach theme to <html> so [data-theme='dark'] works
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  const handleToggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  const handleThemeChange = (nextTheme) => {
+    setTheme(nextTheme);
   };
 
   const handleSignIn = (userData) => {
@@ -37,49 +36,60 @@ function App() {
     <div className="app">
       <Navbar
         theme={theme}
-        onToggleTheme={handleToggleTheme}
+        onThemeChange={handleThemeChange}
         user={user}
         onSignOut={handleSignOut}
       />
 
       <main className="app-main">
-        <div className="container">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/contact" element={<ContactPage />} />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
 
-            <Route path="/auth" element={<AuthPage onSignIn={handleSignIn} />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
-            {/* Admin-only dashboard */}
-            <Route
-              path="/admin"
-              element={
-                user && user.role === "admin" ? (
-                  <AdminDashboard user={user} />
-                ) : (
-                  <Navigate to="/auth" replace />
-                )
-              }
-            />
+          <Route
+            path="/auth"
+            element={<AuthPage onSignIn={handleSignIn} />}
+          />
 
-            {/* Inventory page: any logged-in user */}
-            <Route
-              path="/inventory"
-              element={
-                user ? (
-                  <InventoryPage user={user} />
-                ) : (
-                  <Navigate to="/auth" replace />
-                )
-              }
-            />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
+          {/* Admin dashboard – only for admins */}
+          <Route
+            path="/admin"
+            element={
+              user?.role === "admin" ? (
+                <AdminDashboard user={user} />
+              ) : (
+                <Navigate to="/auth" replace />
+              )
+            }
+          />
+
+          {/* Inventory – TEMP: show AdminDashboard for employees too */}
+          <Route
+            path="/inventory"
+            element={
+              user ? (
+                <AdminDashboard user={user} />
+              ) : (
+                <Navigate to="/auth" replace />
+              )
+            }
+          />
+
+          {/* Fallback 404 */}
+          <Route
+            path="*"
+            element={
+              <div className="container">
+                <h1>Page not found</h1>
+                <p>The page you are looking for does not exist.</p>
+              </div>
+            }
+          />
+        </Routes>
       </main>
 
       <Footer />
