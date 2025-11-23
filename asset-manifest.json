@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/Inventory-System-React/static/css/main.80e7486e.css",
-    "main.js": "/Inventory-System-React/static/js/main.55ae865a.js",
-    "static/media/logo.svg": "/Inventory-System-React/static/media/logo.12a4d86d658b04c526967760d890ba86.svg",
-    "index.html": "/Inventory-System-React/index.html",
-    "main.80e7486e.css.map": "/Inventory-System-React/static/css/main.80e7486e.css.map",
-    "main.55ae865a.js.map": "/Inventory-System-React/static/js/main.55ae865a.js.map"
+    "main.css": "/Inventory-System-React/inventory-frontend/src/index.js/static/css/main.80e7486e.css",
+    "main.js": "/Inventory-System-React/inventory-frontend/src/index.js/static/js/main.aa821592.js",
+    "static/media/logo.svg": "/Inventory-System-React/inventory-frontend/src/index.js/static/media/logo.12a4d86d658b04c526967760d890ba86.svg",
+    "index.html": "/Inventory-System-React/inventory-frontend/src/index.js/index.html",
+    "main.80e7486e.css.map": "/Inventory-System-React/inventory-frontend/src/index.js/static/css/main.80e7486e.css.map",
+    "main.aa821592.js.map": "/Inventory-System-React/inventory-frontend/src/index.js/static/js/main.aa821592.js.map"
   },
   "entrypoints": [
     "static/css/main.80e7486e.css",
-    "static/js/main.55ae865a.js"
+    "static/js/main.aa821592.js"
   ]
 }
