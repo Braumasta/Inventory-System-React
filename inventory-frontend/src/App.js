@@ -15,18 +15,17 @@ import AccountDetails from "./pages/AccountDetails";
 import AccountSecurity from "./pages/AccountSecurity";
 
 function ProtectedRoute({ user, requiredRole, children }) {
+  // Prevent rendering children until user is known
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    // If role is wrong, send them to homepage (or inventory, as you like)
     return <Navigate to="/" replace />;
   }
 
   return children;
 }
-
 function App() {
   const [theme, setTheme] = useState("light");
   const [user, setUser] = useState(null);
