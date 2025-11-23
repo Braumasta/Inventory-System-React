@@ -3,12 +3,14 @@
   <head>
     <meta charset="utf-8">
     <title>Redirecting...</title>
-    <script>
-      // Redirect to index.html while preserving the path
-      var redirectTo = window.location.protocol + '//' + window.location.host + '/Inventory-System-React/' + 'index.html';
-      window.location.replace(redirectTo);
+    <script type="text/javascript">
+      // Redirect all 404s to index.html without losing the path
+      (function() {
+        var path = window.location.pathname;
+        var newUrl = "/Inventory-System-React/index.html?redirect=" + encodeURIComponent(path);
+        window.location.replace(newUrl);
+      })();
     </script>
   </head>
-  <body>
-  </body>
+  <body></body>
 </html>
