@@ -92,11 +92,10 @@
 }
 
 .security-status {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: clamp(80px, 14vw, 120px); /* keep above footer/change password */
-  width: min(520px, calc(100% - 1.5rem));
+  position: sticky;
+  top: 0.5rem;
+  grid-column: 1;
+  width: 100%;
   padding: 0.65rem 0.8rem;
   border-radius: 0.85rem;
   border: 1px solid var(--border);
@@ -106,7 +105,7 @@
   font-size: 0.9rem;
   animation: securityFade 4s ease forwards;
   pointer-events: none;
-  z-index: 30;
+  z-index: 5;
 }
 
 .security-modal-backdrop {
@@ -186,7 +185,8 @@
 
 @media (max-width: 600px) {
   .security-status {
-    bottom: calc(env(safe-area-inset-bottom) + 72px);
-    width: min(440px, calc(100% - 1.5rem));
+    grid-column: 1 / -1;
+    order: 3;
+    top: 0.25rem;
   }
 }

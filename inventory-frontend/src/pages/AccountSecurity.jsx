@@ -13,6 +13,16 @@ const AccountSecurity = ({ user }) => {
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [lockdownEnabled, setLockdownEnabled] = useState(false);
 
+  const formatCode = (value) => {
+    const digitsOnly = value.replace(/\D/g, "").slice(0, 6);
+    if (digitsOnly.length <= 3) return digitsOnly;
+    return `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+  };
+
+  const handleCodeChange = (value) => {
+    setCodeInput(formatCode(value));
+  };
+
   const setStatusMessage = (message, type = "info") => {
     setStatus(message);
     setStatusType(type);
@@ -30,11 +40,12 @@ const AccountSecurity = ({ user }) => {
   };
 
   const verifyCode = () => {
-    if (!codeInput.trim()) {
+    const normalizedInput = codeInput.replace(/\D/g, "");
+    if (!normalizedInput) {
       setStatusMessage("Please enter the 6-digit code.", "error");
       return;
     }
-    if (codeInput.trim() !== sentCode) {
+    if (normalizedInput !== sentCode) {
       setStatusMessage("Invalid code. Please check your email and try again.", "error");
       return;
     }
@@ -138,7 +149,7 @@ const AccountSecurity = ({ user }) => {
                 className="account-input"
                 placeholder="Enter code"
                 value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value)}
+                onChange={(e) => handleCodeChange(e.target.value)}
               />
             </div>
             <button
@@ -211,16 +222,16 @@ const AccountSecurity = ({ user }) => {
             Delete my account
           </button>
         </section>
-      </div>
 
-      {status && (
-        <div
-          key={statusId}
-          className={`security-status security-status-${statusType}`}
-        >
-          {status}
-        </div>
-      )}
+        {status && (
+          <div
+            key={statusId}
+            className={`security-status security-status-${statusType}`}
+          >
+            {status}
+          </div>
+        )}
+      </div>
 
       {isDeleteModalOpen && (
         <div className="security-modal-backdrop">
