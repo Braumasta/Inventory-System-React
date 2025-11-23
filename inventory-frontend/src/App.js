@@ -1,44 +1,123 @@
-import React, { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import LandingPage from './pages/LandingPage';
-import AdminDashboard from './pages/AdminDashboard';
+import React, { useState, useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+
+import HomePage from "./pages/HomePage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
+import AuthPage from "./pages/AuthPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import AdminDashboard from "./pages/AdminDashboard";
+import InventoryPage from "./pages/InventoryPage";
+import AccountDetails from "./pages/AccountDetails";
+import AccountSecurity from "./pages/AccountSecurity";
+
+function ProtectedRoute({ user, requiredRole, children }) {
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
+    // If role is wrong, send them to homepage (or inventory, as you like)
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
 
 function App() {
-  const [theme, setTheme] = useState('light');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [theme, setTheme] = useState("light");
+  const [user, setUser] = useState(null);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
+  // Load theme from localStorage & apply to document on first mount
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    const stored = localStorage.getItem("theme");
+    const initial = stored === "dark" ? "dark" : "light";
+    setTheme(initial);
+    document.documentElement.setAttribute("data-theme", initial);
+  }, []);
+
+  // Whenever theme changes, update <html data-theme="..."> and localStorage
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const handleSignIn = () => {
-    setIsAuthenticated(true);
+  const handleThemeChange = (nextTheme) => {
+    setTheme(nextTheme);
+  };
+
+  const handleSignIn = (userData) => {
+    setUser(userData);
   };
 
   const handleSignOut = () => {
-    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  const handleUpdateUser = (updates) => {
+    setUser((prev) => (prev ? { ...prev, ...updates } : prev));
   };
 
   return (
     <div className="app">
       <Navbar
         theme={theme}
-        onToggleTheme={toggleTheme}
-        isAuthenticated={isAuthenticated}
-        onSignIn={handleSignIn}
+        onThemeChange={handleThemeChange}
+        user={user}
         onSignOut={handleSignOut}
       />
 
       <main className="app-main">
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/" element={<HomePage />} />
+
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+
+          <Route path="/auth" element={<AuthPage onSignIn={handleSignIn} />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute user={user}>
+                <AccountDetails user={user} onUpdateUser={handleUpdateUser} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account/security"
+            element={
+              <ProtectedRoute user={user}>
+                <AccountSecurity user={user} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin dashboard: temporarily open to any signed-in user for showcase */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute user={user}>
+                <AdminDashboard user={user} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Inventory: accessible for both roles, with role-based behavior */}
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute user={user}>
+               <InventoryPage user={user} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 

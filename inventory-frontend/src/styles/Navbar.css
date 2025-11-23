@@ -1,0 +1,342 @@
+/* ========== Navbar ========== */
+
+.navbar {
+  height: var(--nav-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.9rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(
+    to right,
+    rgba(148, 163, 184, 0.15),
+    rgba(37, 99, 235, 0.08)
+  );
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Left: logo + brand */
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.brand-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Right side of navbar */
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Desktop links */
+
+.nav-links {
+  display: none;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .nav-links {
+    display: flex;
+  }
+}
+
+.nav-link {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  position: relative;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.25rem;
+  width: 0;
+  height: 2px;
+  background-color: var(--primary);
+  transition: width 0.2s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* Theme / icon button */
+
+.icon-button {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: rgba(15, 23, 42, 0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Make theme icon more visible in dark mode */
+[data-theme="dark"] .theme-toggle-button {
+  color: #f9fafb;
+  border-color: rgba(148, 163, 184, 0.8);
+  background-color: rgba(15, 23, 42, 0.6);
+}
+
+/* Auth section */
+
+.auth-section {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Profile avatar */
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Dropdown wrappers */
+
+.nav-dropdown-wrapper {
+  position: relative;
+}
+
+/* Dropdown menu */
+
+.dropdown-menu {
+  position: absolute;
+  top: 115%;
+  left: 0;
+  min-width: 210px;
+  background-color: var(--bg-elevated);
+  border-radius: 0.9rem;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border);
+  padding: 0.5rem 0;
+  z-index: 60;
+}
+
+.dropdown-menu-right {
+  right: 0;
+  left: auto;
+}
+
+.dropdown-header {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.dropdown-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.dropdown-badge {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  background-color: var(--primary-soft);
+  color: var(--primary);
+}
+
+.dropdown-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text);
+  text-decoration: none;
+  display: block;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bg-soft);
+}
+
+.dropdown-item.active {
+  font-weight: 600;
+  background-color: var(--primary-soft);
+  color: var(--primary);
+}
+
+.dropdown-item.danger {
+  color: #dc2626;
+}
+
+/* Mobile nav toggle (hamburger / close) */
+
+.nav-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: rgba(15, 23, 42, 0.02);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.nav-toggle svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Light/dark for hamburger */
+[data-theme="dark"] .nav-toggle {
+  color: #f9fafb;
+  border-color: rgba(148, 163, 184, 0.8);
+  background-color: rgba(15, 23, 42, 0.6);
+}
+
+/* Mobile / desktop behavior */
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+  }
+
+  .nav-toggle {
+    display: flex;
+  }
+
+  /* hide desktop theme button and desktop auth section on mobile */
+  .theme-toggle-button {
+    display: none;
+  }
+
+  .auth-section {
+    display: none;
+  }
+}
+
+/* Mobile dropdown menu */
+
+.nav-mobile {
+  position: absolute;
+  top: var(--nav-height);
+  right: 0;
+  left: 0;
+  padding: 0.5rem 0.9rem 0.9rem;
+  background-color: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.nav-mobile-link {
+  font-size: 0.9rem;
+  padding: 0.35rem 0.3rem;
+  text-decoration: none;
+  color: var(--text);
+  text-align: left;
+  border: none;
+  background: none;
+}
+
+/* Theme line in mobile menu uses same style as other links */
+.nav-mobile-theme {
+  cursor: pointer;
+}
+
+/* Mobile sign out button style */
+
+.nav-mobile-button {
+  margin-top: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.75rem;
+  background-color: transparent;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: center;
+}
+
+.nav-mobile-button.danger {
+  border-color: #dc2626;
+  color: #dc2626;
+}

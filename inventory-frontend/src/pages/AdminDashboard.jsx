@@ -1,174 +1,334 @@
-import React, { useState } from 'react';
-
-const mockNewProducts = [
-  { name: 'Wireless Mouse Pro', daysAgo: 1, sku: 'WM-9021' },
-  { name: 'USB-C Hub 7-in-1', daysAgo: 3, sku: 'HUB-071C' },
-  { name: 'Thermal Label Roll', daysAgo: 5, sku: 'LBL-THRML' }
-];
-
-const mockColumns = ['SKU', 'Name', 'Category', 'Quantity', 'Min Stock'];
-const mockRows = [
-  {
-    SKU: 'SKU-1001',
-    Name: 'HDMI Cable 2m',
-    Category: 'Cables',
-    Quantity: 84,
-    'Min Stock': 20
-  },
-  {
-    SKU: 'SKU-1002',
-    Name: 'Barcode Scanner',
-    Category: 'Devices',
-    Quantity: 15,
-    'Min Stock': 5
-  },
-  {
-    SKU: 'SKU-1003',
-    Name: 'POS Thermal Printer',
-    Category: 'Devices',
-    Quantity: 7,
-    'Min Stock': 3
-  }
-];
+// src/pages/AdminDashboard.jsx
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import "../styles/Dashboard.css";
 
 const AdminDashboard = () => {
-  const [columns, setColumns] = useState(mockColumns);
-  const [newColumnName, setNewColumnName] = useState('');
+  // Placeholder data
+  const [activeEmployees] = useState([
+    { id: 1, name: "Sarah Ahmed", role: "Employee", status: "Online" },
+    { id: 2, name: "Omar Khalid", role: "Admin", status: "Online" },
+    { id: 3, name: "Leila Mansour", role: "Employee", status: "Offline" },
+  ]);
 
-  const handleAddColumn = () => {
-    const trimmed = newColumnName.trim();
-    if (!trimmed) return;
-    if (!columns.includes(trimmed)) {
-      setColumns([...columns, trimmed]);
-    }
-    setNewColumnName('');
-  };
+  const [recentItems] = useState([
+    { id: "INV-1023", name: "Wireless Mouse", added: "2 days ago" },
+    { id: "INV-1024", name: "USB-C Hub", added: "3 days ago" },
+    { id: "INV-1025", name: "Label Printer", added: "6 days ago" },
+  ]);
 
-  const handleRemoveColumn = (col) => {
-    if (columns.length <= 3) return; // just to avoid empty tables
-    setColumns(columns.filter((c) => c !== col));
+  const [liveEvents] = useState([
+    { time: "09:12", user: "Sarah", action: "Scanned item", code: "SKU-8842" },
+    { time: "09:07", user: "Omar", action: "Adjusted quantity", code: "SKU-7719" },
+    { time: "08:55", user: "Leila", action: "Processed order", code: "ORD-2034" },
+  ]);
+
+  // Simple local array to show "added users" UI working
+  const [pendingAccess, setPendingAccess] = useState([
+    { id: "USR-48920", role: "Employee", status: "Pending" },
+  ]);
+  const [newUserId, setNewUserId] = useState("");
+  const [newUserRole, setNewUserRole] = useState("employee");
+
+  const handleAddUserAccess = (e) => {
+    e.preventDefault();
+    if (!newUserId.trim()) return;
+
+    setPendingAccess((prev) => [
+      ...prev,
+      {
+        id: newUserId.trim(),
+        role: newUserRole === "admin" ? "Admin" : "Employee",
+        status: "Pending",
+      },
+    ]);
+    setNewUserId("");
+    setNewUserRole("employee");
   };
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
+    <div className="admin-dashboard container">
+      {/* Header */}
+      <div className="admin-dashboard-header">
         <div>
-          <h2 className="dashboard-title">Admin dashboard</h2>
-          <p className="dashboard-tagline">
-            Overview of inventory health and quick access to configurable tables.
+          <h1 className="admin-dashboard-title">Admin dashboard</h1>
+          <p className="admin-dashboard-subtitle">
+            Monitor your organization&apos;s inventory, user access, and live activity
+            in one place.
           </p>
         </div>
-        <div className="dashboard-actions">
-          <button className="btn-ghost">
-            + Add new product
-          </button>
-          <button className="btn-ghost">
-            Export CSV
-          </button>
-        </div>
-      </header>
-
-      {/* Stats */}
-      <section className="stats-grid">
-        <div className="card">
-          <div className="stats-label">Total products in inventory</div>
-          <div className="stats-value">2,340</div>
-          <div className="stats-pill">All orgs · example data</div>
-        </div>
-
-        <div className="card">
-          <div className="stats-label">Low stock items</div>
-          <div className="stats-value">18</div>
-          <div className="stats-pill">Auto notifications enabled</div>
-        </div>
-
-        <div className="card">
-          <div className="stats-label">New products (last 7 days)</div>
-          <div className="stats-value">{mockNewProducts.length}</div>
-          <div className="stats-pill">Synced to all dashboards</div>
-        </div>
-      </section>
-
-      {/* New products + table */}
-      <section className="dashboard-grid">
-        {/* New products list */}
-        <div className="card">
-          <h3 style={{ fontSize: '1rem', marginBottom: '0.8rem' }}>
-            Newly added (last 7 days)
-          </h3>
-          <ul className="new-products-list">
-            {mockNewProducts.map((item) => (
-              <li key={item.sku} className="new-product-item">
-                <div className="new-product-name">{item.name}</div>
-                <div className="new-product-meta">
-                  {item.daysAgo} day{item.daysAgo !== 1 && 's'} ago · {item.sku}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Inventory table */}
-        <div className="card">
-          <div style={{ marginBottom: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '1rem' }}>Inventory manager table</h3>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Admin-configurable columns (frontend demo)
-            </span>
+        <div className="admin-dashboard-stats">
+          <div className="admin-stat-pill">
+            <span className="admin-stat-label">Active employees</span>
+            <span className="admin-stat-value">{activeEmployees.length}</span>
           </div>
-
-          <div className="table-controls">
-            <input
-              type="text"
-              placeholder="New column name (e.g. Supplier)"
-              value={newColumnName}
-              onChange={(e) => setNewColumnName(e.target.value)}
-            />
-            <button className="btn-primary" onClick={handleAddColumn}>
-              Add column
-            </button>
+          <div className="admin-stat-pill">
+            <span className="admin-stat-label">New items (7 days)</span>
+            <span className="admin-stat-value">{recentItems.length}</span>
           </div>
-
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-            Click a column name to remove it (for demo only).
+          <div className="admin-stat-pill">
+            <span className="admin-stat-label">Live feed</span>
+            <span className="admin-stat-value">{liveEvents.length}</span>
           </div>
+        </div>
+      </div>
 
-          <div className="table-wrapper">
-            <table className="inventory-table">
-              <thead>
-                <tr>
-                  {columns.map((col) => (
-                    <th
-                      key={col}
-                      onClick={() => handleRemoveColumn(col)}
-                      style={{ cursor: 'pointer' }}
-                      title="Click to remove column (demo)"
-                    >
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {mockRows.map((row) => (
-                  <tr key={row.SKU}>
-                    {columns.map((col) => (
-                      <td key={col}>
-                        {row[col] !== undefined ? row[col] : '—'}
-                      </td>
-                    ))}
+      {/* Main layout grid */}
+      <div className="admin-grid">
+        {/* LEFT COLUMN: live feed + inventory preview + user access */}
+        <div className="admin-grid-main">
+          {/* Live scan feed */}
+          <section className="admin-card">
+            <div className="admin-card-header">
+              <div>
+                <h2 className="admin-card-title">Live scan feed</h2>
+                <p className="admin-card-subtitle">
+                  Placeholder stream showing recent barcode scans and quantity updates.
+                </p>
+              </div>
+              <span className="live-pill">Live</span>
+            </div>
+
+            <ul className="live-feed-list">
+              {liveEvents.map((event, idx) => (
+                <li key={idx} className="live-feed-item">
+                  <div className="live-feed-time">{event.time}</div>
+                  <div className="live-feed-main">
+                    <div className="live-feed-text">
+                      <strong>{event.user}</strong> &mdash; {event.action}
+                    </div>
+                    <div className="live-feed-code">{event.code}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Inventory preview card */}
+          <section className="admin-card">
+            <div className="admin-card-header">
+              <div>
+                <h2 className="admin-card-title">Inventory preview</h2>
+                <p className="admin-card-subtitle">
+                  Quick glimpse of key stock items. Use the button to open the full
+                  inventory workspace.
+                </p>
+              </div>
+              <Link to="/inventory" className="btn-primary admin-card-cta">
+                Open inventory
+              </Link>
+            </div>
+
+            <div className="inventory-preview-wrapper">
+              <table className="inventory-preview-table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Item</th>
+                    <th>Location</th>
+                    <th>Quantity</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>SKU-8842</td>
+                    <td>Wireless Mouse</td>
+                    <td>Main storage</td>
+                    <td>42</td>
+                    <td>
+                      <span className="badge badge-ok">In stock</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>SKU-7719</td>
+                    <td>Barcode Scanner</td>
+                    <td>Front desk</td>
+                    <td>8</td>
+                    <td>
+                      <span className="badge badge-low">Low</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>SKU-9931</td>
+                    <td>Shipping Boxes (M)</td>
+                    <td>Warehouse B</td>
+                    <td>120</td>
+                    <td>
+                      <span className="badge badge-ok">In stock</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-          <div style={{ marginTop: '0.6rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Later, this table will be fully synced with your Node backend and database. Admins will define
-            custom columns that are stored in the DB and applied per organization.
-          </div>
+          {/* User access management – NOW UNDER INVENTORY PREVIEW */}
+          <section className="admin-card">
+            <div className="admin-card-header">
+              <h2 className="admin-card-title">User access management</h2>
+              <p className="admin-card-subtitle">
+                Add users (registered on this site) to your organization by their
+                unique ID and assign a role. This is a front-end placeholder; the
+                unique ID field will be populated from account details later.
+              </p>
+            </div>
+
+            <form className="admin-access-form" onSubmit={handleAddUserAccess}>
+              <div className="form-row">
+                <label className="form-label" htmlFor="user-id">
+                  User unique ID
+                </label>
+                <input
+                  id="user-id"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. USR-90321"
+                  value={newUserId}
+                  onChange={(e) => setNewUserId(e.target.value)}
+                />
+              </div>
+
+              <div className="form-row">
+                <label className="form-label" htmlFor="user-role">
+                  Role in this organization
+                </label>
+                <select
+                  id="user-role"
+                  className="form-input"
+                  value={newUserRole}
+                  onChange={(e) => setNewUserRole(e.target.value)}
+                >
+                  <option value="employee">Employee</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+
+              <button type="submit" className="btn-primary admin-access-submit">
+                Add to organization
+              </button>
+            </form>
+
+            {pendingAccess.length > 0 && (
+              <div className="pending-access-list">
+                <div className="pending-access-title">Pending access</div>
+                <ul>
+                  {pendingAccess.map((entry, idx) => (
+                    <li key={idx} className="pending-access-item">
+                      <div className="pending-access-main">
+                        <div className="pending-access-id">{entry.id}</div>
+                        <div className="pending-access-role">
+                          {entry.role === "Admin" ? "Admin" : "Employee"}
+                        </div>
+                      </div>
+                      <div className="pending-access-status">
+                        {entry.status}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
         </div>
-      </section>
+
+        {/* RIGHT COLUMN: employees + recent + analytics */}
+        <div className="admin-grid-side">
+          {/* Active employees */}
+          <section className="admin-card">
+            <div className="admin-card-header">
+              <h2 className="admin-card-title">Active employees</h2>
+              <p className="admin-card-subtitle">
+                People who currently have access to this organization&apos;s workspace.
+              </p>
+            </div>
+            <ul className="employee-list">
+              {activeEmployees.map((emp) => (
+                <li key={emp.id} className="employee-item">
+                  <div className="employee-main">
+                    <div className="employee-name">{emp.name}</div>
+                    <div className="employee-meta">
+                      <span className="badge badge-role">
+                        {emp.role === "Admin" ? "Admin" : "Employee"}
+                      </span>
+                    </div>
+                  </div>
+                  <div
+                    className={
+                      "employee-status " +
+                      (emp.status === "Online" ? "employee-status-online" : "")
+                    }
+                  >
+                    {emp.status}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Recently added items */}
+          <section className="admin-card">
+            <div className="admin-card-header">
+              <h2 className="admin-card-title">Added in last 7 days</h2>
+              <p className="admin-card-subtitle">
+                Placeholder data for newly registered inventory items.
+              </p>
+            </div>
+            <ul className="recent-items">
+              {recentItems.map((item) => (
+                <li key={item.id} className="recent-item">
+                  <div className="recent-item-main">
+                    <div className="recent-item-name">{item.name}</div>
+                    <div className="recent-item-id">{item.id}</div>
+                  </div>
+                  <div className="recent-item-time">{item.added}</div>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Analytics overview */}
+          <section className="admin-card">
+            <div className="admin-card-header">
+              <h2 className="admin-card-title">Analytics overview</h2>
+              <p className="admin-card-subtitle">
+                Simple placeholder metrics for inventory performance.
+              </p>
+            </div>
+
+            <div className="analytics-grid">
+              <div className="analytics-stat">
+                <div className="analytics-label">Total SKUs</div>
+                <div className="analytics-value">1,284</div>
+                <div className="analytics-trend analytics-trend-up">
+                  +4.2% vs last month
+                </div>
+              </div>
+              <div className="analytics-stat">
+                <div className="analytics-label">Low stock items</div>
+                <div className="analytics-value">27</div>
+                <div className="analytics-trend analytics-trend-warn">
+                  Review reorder levels
+                </div>
+              </div>
+              <div className="analytics-stat">
+                <div className="analytics-label">Processed today</div>
+                <div className="analytics-value">112</div>
+                <div className="analytics-trend analytics-trend-up">
+                  +19 orders vs yesterday
+                </div>
+              </div>
+            </div>
+
+            <div className="analytics-bar-placeholder">
+              <div className="analytics-bar analytics-bar-1" />
+              <div className="analytics-bar analytics-bar-2" />
+              <div className="analytics-bar analytics-bar-3" />
+              <div className="analytics-bar analytics-bar-4" />
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   );
 };

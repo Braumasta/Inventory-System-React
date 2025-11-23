@@ -1,0 +1,192 @@
+/* ========== Account Security ========== */
+
+.security-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 900px) {
+  .security-grid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr);
+  }
+}
+
+.security-card {
+  background-color: var(--bg-elevated);
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  padding: 1.1rem;
+}
+
+.danger-card {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.08), rgba(248, 113, 113, 0.02));
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.security-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.6rem;
+}
+
+.security-card-title {
+  margin: 0 0 0.15rem;
+  font-size: 1rem;
+}
+
+.security-card-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.security-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.security-send-btn {
+  white-space: nowrap;
+}
+
+.security-divider {
+  height: 1px;
+  background-color: var(--border);
+  margin: 0.4rem 0;
+}
+
+.security-password-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.security-delete-btn {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+.security-alert-list {
+  margin: 0 0 0.8rem;
+  padding-left: 1.1rem;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.security-alert-list li {
+  margin-bottom: 0.25rem;
+}
+
+.security-secondary-btn {
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  background-color: rgba(248, 113, 113, 0.08);
+  color: #b91c1c;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.security-status {
+  position: sticky;
+  top: 0.5rem;
+  grid-column: 1;
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--border);
+  background-color: var(--bg-elevated);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+  font-size: 0.9rem;
+  animation: securityFade 4s ease forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.security-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+
+.security-modal {
+  background: var(--bg-elevated);
+  border-radius: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  width: min(420px, 90vw);
+}
+
+.security-modal-title {
+  margin: 0 0 0.35rem;
+}
+
+.security-modal-text {
+  margin: 0 0 0.8rem;
+  color: var(--text-muted);
+}
+
+.security-modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.security-cancel-btn {
+  background-color: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+[data-theme="dark"] .security-cancel-btn {
+  color: #f9fafb;
+  border-color: rgba(148, 163, 184, 0.6);
+}
+
+.security-status-info {
+  background-color: var(--bg-elevated);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.security-status-success {
+  background-color: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.35);
+  color: #15803d;
+}
+
+.security-status-error {
+  background-color: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #b91c1c;
+}
+
+@keyframes securityFade {
+  0% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .security-status {
+    grid-column: 1 / -1;
+    order: 3;
+    top: 0.25rem;
+  }
+}

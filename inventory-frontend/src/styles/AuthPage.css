@@ -1,0 +1,326 @@
+/* ========== Auth page main layout (Sign in / Sign up) ========== */
+
+.auth-shell {
+  min-height: calc(100vh - var(--nav-height) - 80px);
+  padding: 2rem 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.22), transparent 50%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.18), transparent 55%),
+    var(--bg);
+}
+
+.auth-card-grid {
+  width: 100%;
+  max-width: 1000px;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  background-color: rgba(15, 23, 42, 0.02);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 900px) {
+  .auth-card-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+}
+
+/* Left side */
+
+.auth-side {
+  padding: 1rem 0.5rem 1rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background-color: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.auth-main-title {
+  font-size: clamp(1.6rem, 2.6vw, 2rem);
+  margin: 0;
+}
+
+.auth-main-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  max-width: 28rem;
+}
+
+.auth-meta {
+  display: grid;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+@media (min-width: 600px) {
+  .auth-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.auth-meta-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.auth-meta-value {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.auth-meta-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Right side panel (forms) */
+
+.auth-panel-card {
+  padding: 1.2rem;
+  border-radius: 1.1rem;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+/* stack header + tabs vertically on very small screens */
+@media (max-width: 520px) {
+  .auth-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* Tabs: Sign in / Sign up */
+
+.auth-tabs {
+  display: inline-flex;
+  padding: 0.18rem;
+  border-radius: 999px;
+  background-color: var(--bg-soft);
+  border: 1px solid var(--border);
+}
+
+.pill-tab {
+  border-radius: 999px;
+  border: none;
+  background-color: transparent;
+  padding: 0.25rem 0.9rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+  white-space: nowrap;
+}
+
+.pill-tab-active {
+  background-color: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* Forms (Sign in / Sign up) */
+
+.auth-form {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+/* Generic form row/field styling – stacked rows */
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.form-input {
+  border-radius: 0.7rem;
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.9rem;
+  background-color: var(--bg);
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary-soft);
+}
+
+/* This used to be 3 columns; now just a vertical stack for consistency */
+
+.grid-3-responsive {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Submit button */
+
+.auth-submit-btn {
+  margin-top: 0.2rem;
+  width: 100%;
+}
+
+/* Small helper text */
+
+.auth-small-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Error message */
+
+.auth-error {
+  background-color: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  color: #b91c1c;
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Footer rows under forms (forgot / remembered password, etc.) */
+
+.auth-footer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.auth-footer-row--right {
+  justify-content: flex-end;
+}
+
+.auth-footer-row--center {
+  justify-content: center;
+}
+
+.auth-footer-row--between {
+  justify-content: space-between;
+}
+
+/* Links inside auth footer */
+
+.auth-footer-link {
+  color: var(--primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.auth-footer-link:hover {
+  text-decoration: underline;
+}
+
+/* ========== Forgot Password / Reset page ========== */
+
+.auth-page {
+  min-height: calc(100vh - var(--nav-height) - 80px);
+  padding: 2rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.22), transparent 50%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.18), transparent 55%),
+    var(--bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--bg-elevated);
+  border-radius: 1.25rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  padding: 1.6rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-card .auth-header {
+  margin-bottom: 0.2rem;
+}
+
+.auth-card .auth-title {
+  font-size: 1.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.auth-card .auth-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.auth-card .auth-form {
+  margin-top: 0.4rem;
+}
+
+.auth-success {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* Small screen tweaks */
+
+@media (max-width: 600px) {
+  .auth-card-grid {
+    padding: 1.2rem;
+    border-radius: 1.2rem;
+  }
+
+  .auth-panel-card {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    padding: 1.4rem 1.2rem;
+  }
+}

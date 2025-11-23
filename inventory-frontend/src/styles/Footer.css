@@ -1,0 +1,111 @@
+/* ========== Footer Styles ========== */
+
+.footer {
+  border-top: 1px solid var(--border);
+  background-color: var(--bg-elevated);
+  padding: 1.4rem 1rem;
+  margin-top: 3rem;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.footer-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.footer-link {
+  font-size: 0.85rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  color: var(--primary);
+}
+
+.footer-social {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.social-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  background-color: var(--bg);
+  color: var(--text);
+  transition: all 0.15s ease;
+  padding: 0;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+/* Center SVGs inside circle */
+.social-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Hover behaviors per brand */
+.social-icon--facebook:hover {
+  color: #1877f2; /* FB blue */
+  border-color: #1877f2;
+  transform: translateY(-2px);
+}
+
+.social-icon--x:hover {
+  color: #000000; /* X logo black */
+  border-color: #000000;
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .social-icon--x:hover {
+  color: #f9fafb;        /* look white on dark bg */
+  border-color: #f9fafb;
+}
+
+.social-icon--linkedin:hover {
+  color: #0a66c2; /* LinkedIn blue */
+  border-color: #0a66c2;
+  transform: translateY(-2px);
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+  .footer-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .footer-links {
+    justify-content: center;
+  }
+
+  .footer-social {
+    justify-content: center;
+  }
+}
