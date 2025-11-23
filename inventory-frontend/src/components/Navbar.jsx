@@ -264,6 +264,13 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
                     Inventory
                   </Link>
                   <Link
+                    to="/purchase-history"
+                    className="dropdown-item"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    Purchase history
+                  </Link>
+                  <Link
                     to="/account"
                     className="dropdown-item"
                     onClick={() => setProfileOpen(false)}
@@ -353,6 +360,13 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
                 onClick={() => setMobileOpen(false)}
               >
                 Inventory
+              </Link>
+              <Link
+                to="/purchase-history"
+                className="nav-mobile-link"
+                onClick={() => setMobileOpen(false)}
+              >
+                Purchase history
               </Link>
               <Link
                 to="/account"

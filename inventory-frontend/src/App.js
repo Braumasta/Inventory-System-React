@@ -13,20 +13,21 @@ import AdminDashboard from "./pages/AdminDashboard";
 import InventoryPage from "./pages/InventoryPage";
 import AccountDetails from "./pages/AccountDetails";
 import AccountSecurity from "./pages/AccountSecurity";
+import PurchaseHistory from "./pages/PurchaseHistory";
+import InventoryHistory from "./pages/InventoryHistory";
 
 function ProtectedRoute({ user, requiredRole, children }) {
+  // Prevent rendering children until user is known
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    // If role is wrong, send them to homepage (or inventory, as you like)
     return <Navigate to="/" replace />;
   }
 
   return children;
 }
-
 function App() {
   const [theme, setTheme] = useState("light");
   const [user, setUser] = useState(null);
@@ -112,6 +113,23 @@ function App() {
             element={
               <ProtectedRoute user={user}>
                <InventoryPage user={user} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inventory-history"
+            element={
+              <ProtectedRoute user={user}>
+                <InventoryHistory />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/purchase-history"
+            element={
+              <ProtectedRoute user={user}>
+                <PurchaseHistory />
               </ProtectedRoute>
             }
           />
