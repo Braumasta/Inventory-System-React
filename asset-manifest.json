@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/Inventory-System-React/static/css/main.80e7486e.css",
+    "main.css": "/Inventory-System-React/static/css/main.c97b84cb.css",
     "main.js": "/Inventory-System-React/static/js/main.204fb42f.js",
     "static/media/logo.svg": "/Inventory-System-React/static/media/logo.12a4d86d658b04c526967760d890ba86.svg",
     "index.html": "/Inventory-System-React/index.html",
-    "main.80e7486e.css.map": "/Inventory-System-React/static/css/main.80e7486e.css.map",
+    "main.c97b84cb.css.map": "/Inventory-System-React/static/css/main.c97b84cb.css.map",
     "main.204fb42f.js.map": "/Inventory-System-React/static/js/main.204fb42f.js.map"
   },
   "entrypoints": [
-    "static/css/main.80e7486e.css",
+    "static/css/main.c97b84cb.css",
     "static/js/main.204fb42f.js"
   ]
 }
