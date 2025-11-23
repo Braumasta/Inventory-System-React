@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import "../styles/Inventory.css";
 
 const INVENTORY_HISTORY_KEY = "inventory-history-log";
+const STORE_LIST_KEY = "inventory-store-list";
 const timeFilters = [
   { value: "lastHour", label: "Last hour" },
   { value: "today", label: "Today" },
@@ -27,12 +28,23 @@ export default function InventoryHistory() {
   const [entries, setEntries] = useState([]);
   const [search, setSearch] = useState("");
   const [timeFilter, setTimeFilter] = useState("last7");
+  const [storeList, setStoreList] = useState([]);
+  const [storeFilter, setStoreFilter] = useState("all");
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(INVENTORY_HISTORY_KEY);
       if (stored) {
         setEntries(JSON.parse(stored));
+      }
+    } catch (err) {
+      // ignore
+    }
+    try {
+      const rawStores = localStorage.getItem(STORE_LIST_KEY);
+      if (rawStores) {
+        const parsed = JSON.parse(rawStores);
+        if (Array.isArray(parsed)) setStoreList(parsed);
       }
     } catch (err) {
       // ignore
@@ -47,8 +59,13 @@ export default function InventoryHistory() {
           .toLowerCase();
         return target.includes(search.toLowerCase());
       })
+      .filter((entry) => {
+        if (storeFilter === "all") return true;
+        if (storeFilter === "unassigned") return !entry.storeId;
+        return entry.storeId === storeFilter;
+      })
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [entries, search, timeFilter]);
+  }, [entries, search, timeFilter, storeFilter]);
 
   return (
     <div className="inventory-page">
@@ -79,6 +96,25 @@ export default function InventoryHistory() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
+          <div className="history-search">
+            <label className="form-label" htmlFor="store-filter">
+              Store
+            </label>
+            <select
+              id="store-filter"
+              className="form-input"
+              value={storeFilter}
+              onChange={(e) => setStoreFilter(e.target.value)}
+            >
+              <option value="all">All stores</option>
+              <option value="unassigned">Unassigned</option>
+              {storeList.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="history-filters">
             {timeFilters.map((filter) => (

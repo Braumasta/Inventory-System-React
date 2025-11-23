@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import "../styles/Inventory.css";
 
 const LOG_STORAGE_KEY = "inventory-purchase-log";
+const STORE_LIST_KEY = "inventory-store-list";
 
 const timeFilters = [
   { value: "lastHour", label: "Last hour" },
@@ -77,6 +78,8 @@ const PurchaseHistory = () => {
   const [logEntries, setLogEntries] = useState([]);
   const [search, setSearch] = useState("");
   const [timeFilter, setTimeFilter] = useState("last7");
+  const [storeList, setStoreList] = useState([]);
+  const [storeFilter, setStoreFilter] = useState("all");
 
   useEffect(() => {
     try {
@@ -87,16 +90,30 @@ const PurchaseHistory = () => {
     } catch (err) {
       // ignore
     }
+    try {
+      const rawStores = localStorage.getItem(STORE_LIST_KEY);
+      if (rawStores) {
+        const parsed = JSON.parse(rawStores);
+        if (Array.isArray(parsed)) setStoreList(parsed);
+      }
+    } catch (err) {
+      // ignore
+    }
   }, []);
 
   const filtered = useMemo(() => {
     return logEntries
       .filter((entry) => filterByTime(entry.timestamp, timeFilter))
+      .filter((entry) => {
+        if (storeFilter === "all") return true;
+        if (storeFilter === "unassigned") return !entry.storeId;
+        return entry.storeId === storeFilter;
+      })
       .filter((entry) =>
         entry.id.toLowerCase().includes(search.toLowerCase().trim())
       )
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [logEntries, search, timeFilter]);
+  }, [logEntries, search, timeFilter, storeFilter]);
 
   return (
     <div className="inventory-page">
@@ -127,6 +144,25 @@ const PurchaseHistory = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
+          <div className="history-search">
+            <label className="form-label" htmlFor="store-filter">
+              Store
+            </label>
+            <select
+              id="store-filter"
+              className="form-input"
+              value={storeFilter}
+              onChange={(e) => setStoreFilter(e.target.value)}
+            >
+              <option value="all">All stores</option>
+              <option value="unassigned">Unassigned</option>
+              {storeList.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="history-filters">
             {timeFilters.map((filter) => (
