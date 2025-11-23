@@ -50,7 +50,7 @@ const AdminDashboard = () => {
     <div className="admin-dashboard container">
       {/* Header */}
       <div className="admin-dashboard-header">
-        <div>
+        <div className="admin-header-copy">
           <h1 className="admin-dashboard-title">Admin dashboard</h1>
           <p className="admin-dashboard-subtitle">
             Monitor your organization&apos;s inventory, user access, and live activity
@@ -132,29 +132,29 @@ const AdminDashboard = () => {
                 </thead>
                 <tbody>
                   <tr>
-                    <td>SKU-8842</td>
-                    <td>Wireless Mouse</td>
-                    <td>Main storage</td>
-                    <td>42</td>
-                    <td>
+                    <td data-label="SKU">SKU-8842</td>
+                    <td data-label="Item">Wireless Mouse</td>
+                    <td data-label="Location">Main storage</td>
+                    <td data-label="Quantity">42</td>
+                    <td data-label="Status">
                       <span className="badge badge-ok">In stock</span>
                     </td>
                   </tr>
                   <tr>
-                    <td>SKU-7719</td>
-                    <td>Barcode Scanner</td>
-                    <td>Front desk</td>
-                    <td>8</td>
-                    <td>
+                    <td data-label="SKU">SKU-7719</td>
+                    <td data-label="Item">Barcode Scanner</td>
+                    <td data-label="Location">Front desk</td>
+                    <td data-label="Quantity">8</td>
+                    <td data-label="Status">
                       <span className="badge badge-low">Low</span>
                     </td>
                   </tr>
                   <tr>
-                    <td>SKU-9931</td>
-                    <td>Shipping Boxes (M)</td>
-                    <td>Warehouse B</td>
-                    <td>120</td>
-                    <td>
+                    <td data-label="SKU">SKU-9931</td>
+                    <td data-label="Item">Shipping Boxes (M)</td>
+                    <td data-label="Location">Warehouse B</td>
+                    <td data-label="Quantity">120</td>
+                    <td data-label="Status">
                       <span className="badge badge-ok">In stock</span>
                     </td>
                   </tr>
