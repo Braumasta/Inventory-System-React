@@ -10,14 +10,39 @@ import ContactPage from "./pages/ContactPage";
 import AuthPage from "./pages/AuthPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import InventoryPage from "./pages/InventoryPage";
+import AccountDetails from "./pages/AccountDetails";
+import AccountSecurity from "./pages/AccountSecurity";
+
+function ProtectedRoute({ user, requiredRole, children }) {
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
+    // If role is wrong, send them to homepage (or inventory, as you like)
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
 
 function App() {
-  const [theme, setTheme] = useState("light"); // 'light' | 'dark'
-  const [user, setUser] = useState(null); // { name, email, role }
+  const [theme, setTheme] = useState("light");
+  const [user, setUser] = useState(null);
 
-  // Attach theme to <html> so [data-theme='dark'] works
+  // Load theme from localStorage & apply to document on first mount
+  useEffect(() => {
+    const stored = localStorage.getItem("theme");
+    const initial = stored === "dark" ? "dark" : "light";
+    setTheme(initial);
+    document.documentElement.setAttribute("data-theme", initial);
+  }, []);
+
+  // Whenever theme changes, update <html data-theme="..."> and localStorage
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   const handleThemeChange = (nextTheme) => {
@@ -30,6 +55,10 @@ function App() {
 
   const handleSignOut = () => {
     setUser(null);
+  };
+
+  const handleUpdateUser = (updates) => {
+    setUser((prev) => (prev ? { ...prev, ...updates } : prev));
   };
 
   return (
@@ -48,47 +77,47 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
 
+          <Route path="/auth" element={<AuthPage onSignIn={handleSignIn} />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route
-            path="/auth"
-            element={<AuthPage onSignIn={handleSignIn} />}
+            path="/account"
+            element={
+              <ProtectedRoute user={user}>
+                <AccountDetails user={user} onUpdateUser={handleUpdateUser} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account/security"
+            element={
+              <ProtectedRoute user={user}>
+                <AccountSecurity user={user} />
+              </ProtectedRoute>
+            }
           />
 
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
-          {/* Admin dashboard – only for admins */}
+          {/* Admin dashboard: temporarily open to any signed-in user for showcase */}
           <Route
             path="/admin"
             element={
-              user?.role === "admin" ? (
+              <ProtectedRoute user={user}>
                 <AdminDashboard user={user} />
-              ) : (
-                <Navigate to="/auth" replace />
-              )
+              </ProtectedRoute>
             }
           />
 
-          {/* Inventory – TEMP: show AdminDashboard for employees too */}
+          {/* Inventory: accessible for both roles, with role-based behavior */}
           <Route
             path="/inventory"
             element={
-              user ? (
-                <AdminDashboard user={user} />
-              ) : (
-                <Navigate to="/auth" replace />
-              )
+              <ProtectedRoute user={user}>
+               <InventoryPage user={user} />
+              </ProtectedRoute>
             }
           />
 
-          {/* Fallback 404 */}
-          <Route
-            path="*"
-            element={
-              <div className="container">
-                <h1>Page not found</h1>
-                <p>The page you are looking for does not exist.</p>
-              </div>
-            }
-          />
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 

@@ -48,7 +48,7 @@
   height: 32px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -57,6 +57,8 @@
   color: var(--text);
   transition: all 0.15s ease;
   padding: 0;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 /* Center SVGs inside circle */
@@ -64,6 +66,7 @@
   width: 18px;
   height: 18px;
   display: block;
+  margin: 0 auto;
 }
 
 /* Hover behaviors per brand */

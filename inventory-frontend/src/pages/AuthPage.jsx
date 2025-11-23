@@ -26,10 +26,16 @@ const AuthPage = ({ onSignIn }) => {
     setError("");
   };
 
-  // TEMP: purely frontend – backend will decide real role later
+  // TEMP: purely frontend - backend will decide real role later
   const inferRoleFromEmail = (email) => {
     if (!email) return "employee";
     return email.toLowerCase().includes("admin") ? "admin" : "employee";
+  };
+
+  const deriveUserId = (email) => {
+    if (!email) return "USR-00000";
+    const base = (email.split("@")[0] || "USER").replace(/[^a-zA-Z0-9]/g, "");
+    return `USR-${base.toUpperCase().slice(0, 5).padEnd(5, "0")}`;
   };
 
   const handleSignInSubmit = (e) => {
@@ -45,8 +51,14 @@ const AuthPage = ({ onSignIn }) => {
 
     const user = {
       name: signInEmail.split("@")[0] || "User",
+      firstName: signInEmail.split("@")[0] || "User",
+      middleName: "",
+      lastName: "",
+      dob: "",
       email: signInEmail,
       role,
+      id: deriveUserId(signInEmail),
+      avatarUrl: "",
     };
 
     if (typeof onSignIn === "function") {
@@ -101,9 +113,15 @@ const AuthPage = ({ onSignIn }) => {
 
     if (typeof onSignIn === "function") {
       onSignIn({
-        name: `${firstName} ${lastName}`.trim(),
+        name: `${firstName} ${middleName} ${lastName}`.replace(/\s+/g, " ").trim(),
+        firstName,
+        middleName,
+        lastName,
+        dob,
         email: signUpEmail,
         role,
+        id: deriveUserId(signUpEmail),
+        avatarUrl: "",
       });
     }
 

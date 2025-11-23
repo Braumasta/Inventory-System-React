@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../styles/Navbar.css";
 import logo from "../assets/logo.svg"; // your logo file
@@ -107,6 +107,9 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
 
   const [isProfileOpen, setProfileOpen] = useState(false);
   const [isMobileOpen, setMobileOpen] = useState(false);
+  const profileRef = useRef(null);
+  const mobileRef = useRef(null);
+  const mobileToggleRef = useRef(null);
 
   const isOnInventory = location.pathname.startsWith("/inventory");
   const isOnAdmin = location.pathname.startsWith("/admin");
@@ -121,14 +124,41 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
     setMobileOpen(false);
   };
 
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((part) => part[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "U";
+  // Close dropdowns/menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        isProfileOpen &&
+        profileRef.current &&
+        !profileRef.current.contains(event.target)
+      ) {
+        setProfileOpen(false);
+      }
+
+      if (isMobileOpen) {
+        const clickedOutsideMobile =
+          mobileRef.current &&
+          !mobileRef.current.contains(event.target) &&
+          mobileToggleRef.current &&
+          !mobileToggleRef.current.contains(event.target);
+
+        if (clickedOutsideMobile) {
+          setMobileOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isProfileOpen, isMobileOpen]);
+
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "U";
 
   return (
     <header className="navbar">
@@ -147,31 +177,41 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
       <div className="navbar-right">
         {/* Desktop nav links */}
         <nav className="nav-links">
-          <Link to="/about" className="nav-link">
-            About
-          </Link>
-          <Link to="/contact" className="nav-link">
-            Contact
-          </Link>
-
-          {user && (
-            <Link
-              to="/inventory"
-              className="nav-link"
-              style={isOnInventory ? { fontWeight: 600 } : {}}
-            >
-              Inventory
-            </Link>
+          {!user && (
+            <>
+              <Link to="/about" className="nav-link">
+                About
+              </Link>
+              <Link to="/contact" className="nav-link">
+                Contact
+              </Link>
+            </>
           )}
 
-          {user?.role === "admin" && (
-            <Link
-              to="/admin"
-              className="nav-link"
-              style={isOnAdmin ? { fontWeight: 600 } : {}}
-            >
-              Dashboard
-            </Link>
+          {user && (
+            <>
+              <Link
+                to="/admin"
+                className="nav-link"
+                style={isOnAdmin ? { fontWeight: 600 } : {}}
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventory"
+                className="nav-link"
+                style={isOnInventory ? { fontWeight: 600 } : {}}
+              >
+                Inventory
+              </Link>
+              <Link
+                to="/account"
+                className="nav-link"
+                style={location.pathname.startsWith("/account") ? { fontWeight: 600 } : {}}
+              >
+                Account
+              </Link>
+            </>
           )}
         </nav>
 
@@ -187,13 +227,17 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
         {/* Desktop auth section (hidden on mobile via CSS) */}
         <div className="auth-section">
           {user ? (
-            <div className="nav-dropdown-wrapper">
+            <div className="nav-dropdown-wrapper" ref={profileRef}>
               <div
                 className="avatar"
                 title={user.name}
                 onClick={() => setProfileOpen((prev) => !prev)}
               >
-                {initials}
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.name} className="avatar-image" />
+                ) : (
+                  initials
+                )}
               </div>
               {isProfileOpen && (
                 <div className="dropdown-menu dropdown-menu-right">
@@ -205,32 +249,48 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
                     </div>
                   </div>
 
-                  {user?.role === "admin" ? (
-                    <>
-                      <Link
-                        to="/admin"
-                        className="dropdown-item"
-                        onClick={() => setProfileOpen(false)}
-                      >
-                        Dashboard
-                      </Link>
-                      <Link
-                        to="/inventory"
-                        className="dropdown-item"
-                        onClick={() => setProfileOpen(false)}
-                      >
-                        Inventory
-                      </Link>
-                    </>
-                  ) : (
-                    <Link
-                      to="/inventory"
-                      className="dropdown-item"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      Inventory
-                    </Link>
-                  )}
+                  <Link
+                    to="/admin"
+                    className="dropdown-item"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    Admin Dashboard
+                  </Link>
+                  <Link
+                    to="/inventory"
+                    className="dropdown-item"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    Inventory
+                  </Link>
+                  <Link
+                    to="/account"
+                    className="dropdown-item"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    Account details
+                  </Link>
+                  <Link
+                    to="/account/security"
+                    className="dropdown-item"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    Security
+                  </Link>
+                  <Link
+                    to="/about"
+                    className="dropdown-item"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    About
+                  </Link>
+                  <Link
+                    to="/contact"
+                    className="dropdown-item"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    Contact
+                  </Link>
 
                   <button className="dropdown-item danger" onClick={handleSignOutClick}>
                     Sign out
@@ -250,6 +310,7 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
           className="nav-toggle"
           onClick={() => setMobileOpen((prev) => !prev)}
           aria-label="Toggle navigation"
+          ref={mobileToggleRef}
         >
           {isMobileOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
@@ -257,40 +318,71 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
 
       {/* Mobile menu */}
       {isMobileOpen && (
-        <div className="nav-mobile">
-          <Link
-            to="/about"
-            className="nav-mobile-link"
-            onClick={() => setMobileOpen(false)}
-          >
-            About
-          </Link>
-          <Link
-            to="/contact"
-            className="nav-mobile-link"
-            onClick={() => setMobileOpen(false)}
-          >
-            Contact
-          </Link>
-
-          {user && (
-            <Link
-              to="/inventory"
-              className="nav-mobile-link"
-              onClick={() => setMobileOpen(false)}
-            >
-              Inventory
-            </Link>
+        <div className="nav-mobile" ref={mobileRef}>
+          {!user && (
+            <>
+              <Link
+                to="/about"
+                className="nav-mobile-link"
+                onClick={() => setMobileOpen(false)}
+              >
+                About
+              </Link>
+              <Link
+                to="/contact"
+                className="nav-mobile-link"
+                onClick={() => setMobileOpen(false)}
+              >
+                Contact
+              </Link>
+            </>
           )}
 
-          {user?.role === "admin" && (
-            <Link
-              to="/admin"
-              className="nav-mobile-link"
-              onClick={() => setMobileOpen(false)}
-            >
-              Dashboard
-            </Link>
+          {user && (
+            <>
+              <Link
+                to="/admin"
+                className="nav-mobile-link"
+                onClick={() => setMobileOpen(false)}
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventory"
+                className="nav-mobile-link"
+                onClick={() => setMobileOpen(false)}
+              >
+                Inventory
+              </Link>
+              <Link
+                to="/account"
+                className="nav-mobile-link"
+                onClick={() => setMobileOpen(false)}
+              >
+                Account details
+              </Link>
+              <Link
+                to="/account/security"
+                className="nav-mobile-link"
+                onClick={() => setMobileOpen(false)}
+              >
+                Security
+              </Link>
+              <Link
+                to="/about"
+                className="nav-mobile-link"
+                onClick={() => setMobileOpen(false)}
+              >
+                About
+              </Link>
+              <Link
+                to="/contact"
+                className="nav-mobile-link"
+                onClick={() => setMobileOpen(false)}
+              >
+                Contact
+              </Link>
+            </>
           )}
 
           {/* Theme toggle inside mobile menu */}
