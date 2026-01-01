@@ -32,7 +32,6 @@ function ProtectedRoute({ user, requiredRole, children }) {
 function App() {
   const [theme, setTheme] = useState("light");
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState("");
 
   // Load theme from localStorage & apply to document on first mount
   useEffect(() => {
@@ -47,7 +46,6 @@ function App() {
     if (savedUser && savedToken) {
       try {
         setUser(JSON.parse(savedUser));
-        setToken(savedToken);
       } catch {
         // ignore parse errors
       }
@@ -67,7 +65,6 @@ function App() {
   const handleSignIn = ({ user: userData, token: tokenValue }) => {
     if (tokenValue) {
       storeToken(tokenValue);
-      setToken(tokenValue);
     }
     if (userData) {
       setUser(userData);
@@ -77,7 +74,6 @@ function App() {
 
   const handleSignOut = () => {
     setUser(null);
-    setToken("");
     removeToken();
     localStorage.removeItem("authUser");
   };

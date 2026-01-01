@@ -33,12 +33,6 @@ const AuthPage = ({ onSignIn }) => {
     return email.toLowerCase().includes("admin") ? "admin" : "employee";
   };
 
-  const deriveUserId = (email) => {
-    if (!email) return "USR-00000";
-    const base = (email.split("@")[0] || "USER").replace(/[^a-zA-Z0-9]/g, "");
-    return `USR-${base.toUpperCase().slice(0, 5).padEnd(5, "0")}`;
-  };
-
   const handleSignInSubmit = async (e) => {
     e.preventDefault();
     setError("");
