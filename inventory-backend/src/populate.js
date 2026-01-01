@@ -194,6 +194,13 @@ async function ensureTables(dbName) {
 
   // ---- schema upgrades for old tables
   await ensureColumn(dbName, "items", "store_id", "INT NULL");
+  await ensureColumn(dbName, "items", "sku", "VARCHAR(64) UNIQUE");
+  await ensureColumn(dbName, "items", "name", "VARCHAR(255)");
+  await ensureColumn(dbName, "items", "category", "VARCHAR(100)");
+  await ensureColumn(dbName, "items", "quantity", "INT");
+  await ensureColumn(dbName, "items", "location", "VARCHAR(100)");
+  await ensureColumn(dbName, "items", "price", "DECIMAL(10,2)");
+  await ensureColumn(dbName, "items", "image_url", "TEXT");
   await ensureColumn(dbName, "inventory_events", "sku", "VARCHAR(64) NULL");
   await ensureColumn(dbName, "inventory_events", "detail", "TEXT NULL");
   await ensureColumn(dbName, "inventory_events", "delta", "INT NULL");
