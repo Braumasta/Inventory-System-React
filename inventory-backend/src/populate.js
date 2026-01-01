@@ -1,6 +1,16 @@
 require("dotenv").config();
 const pool = require("./db");
 
+async function ensureColumn(table, column, definition) {
+  const [cols] = await pool.query(
+    "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?",
+    [table, column]
+  );
+  if (!cols.length) {
+    await pool.query(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+  }
+}
+
 const stores = [
   { name: "Main Store", location: "Head Office" },
   { name: "East Branch", location: "Harbor District" },
@@ -76,6 +86,11 @@ async function main() {
   try {
     await pool.query("SELECT 1");
     console.log("DB connection OK");
+
+    await ensureColumn("items", "store_id", "INT NULL");
+    await ensureColumn("inventory_events", "sku", "VARCHAR(64)");
+    await ensureColumn("inventory_events", "detail", "TEXT");
+    await ensureColumn("inventory_events", "delta", "INT");
 
     await ensureStores();
     console.log("Stores ensured");
