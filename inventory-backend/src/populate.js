@@ -11,6 +11,21 @@ async function ensureColumn(table, column, definition) {
   }
 }
 
+async function ensureTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS inventory_events (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      item_id INT,
+      sku VARCHAR(64),
+      action VARCHAR(50),
+      detail TEXT,
+      delta INT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
+    );
+  `);
+}
+
 const stores = [
   { name: "Main Store", location: "Head Office" },
   { name: "East Branch", location: "Harbor District" },
@@ -87,6 +102,7 @@ async function main() {
     await pool.query("SELECT 1");
     console.log("DB connection OK");
 
+    await ensureTables();
     await ensureColumn("items", "store_id", "INT NULL");
     await ensureColumn("inventory_events", "sku", "VARCHAR(64)");
     await ensureColumn("inventory_events", "detail", "TEXT");
