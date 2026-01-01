@@ -54,15 +54,6 @@ const ensureSchema = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
-  const itemAlters = [
-    "ALTER TABLE items ADD COLUMN IF NOT EXISTS sku VARCHAR(64) UNIQUE",
-    "ALTER TABLE items ADD COLUMN IF NOT EXISTS category VARCHAR(100)",
-    "ALTER TABLE items ADD COLUMN IF NOT EXISTS location VARCHAR(100)",
-    "ALTER TABLE items ADD COLUMN IF NOT EXISTS image_url TEXT",
-  ];
-  for (const stmt of itemAlters) {
-    await pool.query(stmt);
-  }
 
   // Orders + line items
   await pool.query(`
