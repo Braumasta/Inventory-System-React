@@ -62,7 +62,7 @@ const mapApiItemToRow = (item) => ({
   StoreId: item.storeId || null,
 });
 
-const mapRowToApiPayload = (row) => ({
+const mapRowToApiPayload = (row, fallbackStoreId = null) => ({
   sku: row.SKU || null,
   name: row.Name || "",
   category: row.Category || null,
@@ -70,6 +70,7 @@ const mapRowToApiPayload = (row) => ({
   location: row.Location || null,
   price: Number(row.Price) || 0,
   imageUrl: row.Image || null,
+  storeId: row.StoreId || fallbackStoreId || null,
 });
 
 const makeDefaultStore = (id, name) => ({
@@ -455,9 +456,9 @@ const InventoryPage = ({ user }) => {
     try {
       for (const row of rows) {
         if (row.Id) {
-          await updateItem(row.Id, mapRowToApiPayload(row));
+          await updateItem(row.Id, mapRowToApiPayload(row, selectedStoreId));
         } else {
-          await createItem(mapRowToApiPayload(row));
+          await createItem(mapRowToApiPayload(row, selectedStoreId));
         }
       }
       addHistoryEntry("Save changes", { count: rows.length });
