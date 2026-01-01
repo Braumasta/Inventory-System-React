@@ -124,7 +124,7 @@ const InventoryPage = ({ user }) => {
   const [cartItems, setCartItems] = useState([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [logEntries, setLogEntries] = useState([]);
-  const [historyEntries, setHistoryEntries] = useState([]);
+  const [, setHistoryEntries] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [newProductSku, setNewProductSku] = useState("");
