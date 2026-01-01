@@ -162,6 +162,55 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
+// Current user profile
+app.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, email, first_name AS firstName, last_name AS lastName, role FROM users WHERE id = ?",
+      [req.user?.sub]
+    );
+    if (!rows.length) return res.status(404).json({ error: "User not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("/me failed:", err.message);
+    res.status(500).json({ error: "Could not fetch profile" });
+  }
+});
+
+app.put("/me", authMiddleware, async (req, res) => {
+  const { firstName = "", lastName = "" } = req.body || {};
+  try {
+    await pool.query(
+      "UPDATE users SET first_name = ?, last_name = ? WHERE id = ?",
+      [firstName, lastName, req.user?.sub]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Update profile failed:", err.message);
+    res.status(500).json({ error: "Could not update profile" });
+  }
+});
+
+app.post("/auth/password", authMiddleware, async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!newPassword) return res.status(400).json({ error: "New password required" });
+  try {
+    const [rows] = await pool.query(
+      "SELECT password_hash FROM users WHERE id = ?",
+      [req.user?.sub]
+    );
+    if (!rows.length) return res.status(404).json({ error: "User not found" });
+    const ok = await bcrypt.compare(currentPassword || "", rows[0].password_hash);
+    if (!ok) return res.status(401).json({ error: "Current password incorrect" });
+    const hash = await bcrypt.hash(newPassword, 10);
+    await pool.query("UPDATE users SET password_hash = ? WHERE id = ?", [hash, req.user?.sub]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Password change failed:", err.message);
+    res.status(500).json({ error: "Could not update password" });
+  }
+});
+
 // Example items endpoint (expects a table named `items`)
 app.get("/items", async (_req, res) => {
   try {

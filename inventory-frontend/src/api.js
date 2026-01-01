@@ -59,6 +59,25 @@ export const register = (data) =>
     body: JSON.stringify(data),
   }).then(handleResponse);
 
+export const fetchMe = () =>
+  fetch(`${API_BASE}/me`, {
+    headers: authHeaders(),
+  }).then(handleResponse);
+
+export const updateProfile = (data) =>
+  fetch(`${API_BASE}/me`, {
+    method: "PUT",
+    headers: { ...jsonHeaders, ...authHeaders() },
+    body: JSON.stringify(data),
+  }).then(handleResponse);
+
+export const changePassword = (currentPassword, newPassword) =>
+  fetch(`${API_BASE}/auth/password`, {
+    method: "POST",
+    headers: { ...jsonHeaders, ...authHeaders() },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  }).then(handleResponse);
+
 export const createOrder = (items) =>
   fetch(`${API_BASE}/orders`, {
     method: "POST",

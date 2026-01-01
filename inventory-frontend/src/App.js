@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { setToken as storeToken, clearToken as removeToken, getToken as loadToken } from "./api";
+import {
+  setToken as storeToken,
+  clearToken as removeToken,
+  getToken as loadToken,
+  fetchMe,
+} from "./api";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -43,12 +48,23 @@ function App() {
     // Load auth from storage
     const savedUser = localStorage.getItem("authUser");
     const savedToken = loadToken();
-    if (savedUser && savedToken) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        // ignore parse errors
+    if (savedToken) {
+      // Optimistically set from cached user, then refresh from backend
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch {
+          // ignore parse errors
+        }
       }
+      fetchMe()
+        .then((me) => {
+          setUser(me);
+          localStorage.setItem("authUser", JSON.stringify(me));
+        })
+        .catch(() => {
+          handleSignOut();
+        });
     }
   }, []);
 

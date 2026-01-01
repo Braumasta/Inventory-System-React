@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "../styles/AccountDetails.css";
+import { updateProfile, fetchMe } from "../api";
 
 const AccountDetails = ({ user, onUpdateUser }) => {
   const [firstName, setFirstName] = useState(user?.firstName || "");
@@ -7,6 +8,8 @@ const AccountDetails = ({ user, onUpdateUser }) => {
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [dob, setDob] = useState(user?.dob || "");
   const [avatarPreview, setAvatarPreview] = useState(user?.avatarUrl || "");
+  const [status, setStatus] = useState("");
+  const [statusType, setStatusType] = useState("info");
 
   useEffect(() => {
     setFirstName(user?.firstName || "");
@@ -35,7 +38,7 @@ const AccountDetails = ({ user, onUpdateUser }) => {
     setAvatarPreview(preview);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
 
@@ -44,14 +47,22 @@ const AccountDetails = ({ user, onUpdateUser }) => {
       .join(" ")
       .trim();
 
-    onUpdateUser?.({
-      firstName,
-      middleName,
-      lastName,
-      dob,
-      name: fullName || user.name,
-      avatarUrl: avatarPreview,
-    });
+    try {
+      await updateProfile({ firstName, lastName });
+      const refreshed = await fetchMe();
+      onUpdateUser?.({
+        ...refreshed,
+        middleName,
+        dob,
+        name: fullName || refreshed.firstName || user.name,
+        avatarUrl: avatarPreview,
+      });
+      setStatus("Profile updated");
+      setStatusType("success");
+    } catch (err) {
+      setStatus(err.message || "Could not update profile");
+      setStatusType("error");
+    }
   };
 
   const roleLabel = user?.role === "admin" ? "Admin" : "Employee";
@@ -77,6 +88,7 @@ const AccountDetails = ({ user, onUpdateUser }) => {
 
       <div className="account-grid">
         <section className="account-card account-profile">
+          {status && <div className={`alert ${statusType}`}>{status}</div>}
           <div className="avatar-upload">
             <div className="avatar-frame">
               {avatarPreview ? (
