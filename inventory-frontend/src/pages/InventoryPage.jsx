@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/Inventory.css";
+import { fetchItems, createItem, updateItem, deleteItem } from "../api";
 
 const initialColumns = [
   "Image",
@@ -49,6 +50,27 @@ const taxRate = 0.08;
 const STORE_LIST_KEY = "inventory-store-list";
 const SELECTED_STORE_KEY = "inventory-selected-store";
 
+const mapApiItemToRow = (item) => ({
+  Id: item.id,
+  SKU: item.sku || "",
+  Name: item.name || "",
+  Category: item.category || "",
+  Quantity: Number(item.quantity) || 0,
+  Location: item.location || "",
+  Price: Number(item.price) || 0,
+  Image: item.imageUrl || "",
+});
+
+const mapRowToApiPayload = (row) => ({
+  sku: row.SKU || null,
+  name: row.Name || "",
+  category: row.Category || null,
+  quantity: Number(row.Quantity) || 0,
+  location: row.Location || null,
+  price: Number(row.Price) || 0,
+  imageUrl: row.Image || null,
+});
+
 const makeDefaultStore = (id, name) => ({
   id,
   name,
@@ -88,6 +110,8 @@ const InventoryPage = ({ user }) => {
   const [columns, setColumns] = useState(initialColumns);
   const [columnNotes, setColumnNotes] = useState({});
   const [rows, setRows] = useState(initialRows);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [newColumnName, setNewColumnName] = useState("");
   const [newColumnNote, setNewColumnNote] = useState("");
   const [search, setSearch] = useState("");
@@ -105,6 +129,20 @@ const InventoryPage = ({ user }) => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [newProductSku, setNewProductSku] = useState("");
   const [dirty, setDirty] = useState(false);
+
+  const refreshItems = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchItems();
+      setRows(data.map(mapApiItemToRow));
+      setDirty(false);
+      setError("");
+    } catch (err) {
+      setError(err.message || "Failed to load items");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCellChange = (rowIndex, columnKey, value) => {
     setRows((prev) => {
@@ -177,6 +215,9 @@ const InventoryPage = ({ user }) => {
     setRows(storeData.rows || initialRows);
     setLogEntries(storeData.logEntries || []);
     setHistoryEntries(storeData.historyEntries || []);
+
+    // Fetch from API
+    refreshItems();
   }, []);
 
   useEffect(() => {
@@ -371,55 +412,63 @@ const InventoryPage = ({ user }) => {
     return `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
   }, [logEntries]);
 
-  const handleAddProduct = (e) => {
+  const handleAddProduct = async (e) => {
     e.preventDefault();
     const sku = newProductSku.trim();
     if (!sku) return;
-    if (rows.some((r) => (r.SKU || "").toLowerCase() === sku.toLowerCase())) {
+    try {
+      await createItem({
+        sku,
+        name: sku,
+        quantity: 0,
+        price: 0,
+        category: "",
+        location: "",
+        imageUrl: "",
+      });
+      addHistoryEntry("Add product", { sku });
       setNewProductSku("");
-      return;
+      await refreshItems();
+    } catch (err) {
+      window.alert(err.message || "Could not add product");
     }
-    setRows((prev) => [
-      ...prev,
-      {
-        SKU: sku,
-        Name: "",
-        Category: "",
-        Quantity: 0,
-        Location: "",
-        Price: 0,
-        Image: "",
-      },
-    ]);
-    addHistoryEntry("Add product", { sku });
-    setDirty(true);
-    setNewProductSku("");
   };
 
-  const handleDeleteProduct = (sku) => {
-    setRows((prev) => prev.filter((row) => row.SKU !== sku));
-    addHistoryEntry("Delete product", { sku });
-    setDirty(true);
-    setShowDeleteModal(null);
+  const handleDeleteProduct = async (item) => {
+    if (!item?.Id) return;
+    try {
+      await deleteItem(item.Id);
+      addHistoryEntry("Delete product", { sku: item.SKU });
+      await refreshItems();
+    } catch (err) {
+      window.alert(err.message || "Could not delete product");
+    } finally {
+      setShowDeleteModal(null);
+    }
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!dirty) {
       window.alert("No new changes to save.");
       setShowSaveModal(false);
       return;
     }
-    addHistoryEntry("Save changes", { count: rows.length });
-    saveStoreData(currentStoreId, {
-      id: currentStoreId,
-      columns,
-      columnNotes,
-      rows,
-      logEntries,
-      historyEntries,
-    });
-    setDirty(false);
-    setShowSaveModal(false);
+    try {
+      for (const row of rows) {
+        if (row.Id) {
+          await updateItem(row.Id, mapRowToApiPayload(row));
+        } else {
+          await createItem(mapRowToApiPayload(row));
+        }
+      }
+      addHistoryEntry("Save changes", { count: rows.length });
+      await refreshItems();
+    } catch (err) {
+      window.alert(err.message || "Could not save changes");
+    } finally {
+      setShowSaveModal(false);
+      setDirty(false);
+    }
   };
 
   const handleImageFile = (rowIndex, file) => {
@@ -523,6 +572,9 @@ const InventoryPage = ({ user }) => {
           </Link>
         </div>
       </header>
+
+      {error && <div className="alert error">Failed to load items: {error}</div>}
+      {loading && <div className="alert info">Loading items...</div>}
 
       <section className="inventory-shell card">
         <div className="inventory-toolbar">
@@ -784,7 +836,7 @@ const InventoryPage = ({ user }) => {
                           <button
                             type="button"
                             className="inline-remove"
-                            onClick={() => setShowDeleteModal(row.SKU)}
+                            onClick={() => setShowDeleteModal({ Id: row.Id, SKU: row.SKU })}
                           >
                             Delete
                           </button>
@@ -1027,7 +1079,7 @@ const InventoryPage = ({ user }) => {
           <div className="modal-overlay">
             <div className="modal">
               <h4>Delete product</h4>
-              <p>Are you sure you want to remove {showDeleteModal} from inventory?</p>
+              <p>Are you sure you want to remove {showDeleteModal.SKU} from inventory?</p>
               <div className="modal-actions">
                 <button
                   className="btn-ghost"
