@@ -11,6 +11,14 @@ async function ensureColumn(table, column, definition) {
   }
 }
 
+async function columnExists(table, column) {
+  const [cols] = await pool.query(
+    "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?",
+    [table, column]
+  );
+  return cols.length > 0;
+}
+
 async function ensureTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS inventory_events (
@@ -131,9 +139,29 @@ async function main() {
           [orderResult.insertId, itemId, qty, priceEach]
         );
         await pool.query("UPDATE items SET quantity = GREATEST(quantity - ?, 0) WHERE id = ?", [qty, itemId]);
+        const hasSku = await columnExists("inventory_events", "sku");
+        const hasDetail = await columnExists("inventory_events", "detail");
+        const hasDelta = await columnExists("inventory_events", "delta");
+        const columns = ["item_id"];
+        const params = [itemId];
+        if (hasSku) {
+          columns.push("sku");
+          params.push(itemRows[0].sku || null);
+        }
+        columns.push("action");
+        params.push("order");
+        if (hasDetail) {
+          columns.push("detail");
+          params.push("Seed order");
+        }
+        if (hasDelta) {
+          columns.push("delta");
+          params.push(-qty);
+        }
+        const placeholders = columns.map(() => "?").join(", ");
         await pool.query(
-          "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, (SELECT sku FROM items WHERE id = ?), 'order', 'Seed order', ?)",
-          [itemId, itemId, -qty]
+          `INSERT INTO inventory_events (${columns.join(", ")}) VALUES (${placeholders})`,
+          params
         );
         console.log("Seed order created");
       }
