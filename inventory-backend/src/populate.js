@@ -7,7 +7,7 @@ async function ensureColumn(table, column, definition) {
     [table, column]
   );
   if (!cols.length) {
-    await pool.query(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+    await pool.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 }
 
