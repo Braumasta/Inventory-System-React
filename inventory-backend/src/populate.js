@@ -63,7 +63,12 @@ async function ensureColumn(table, column, definition) {
     [table, column]
   );
   if (!cols.length) {
-    await pool.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    try {
+      await pool.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    } catch (err) {
+      // Ignore if column already exists
+      console.warn(`Warning altering ${table}.${column}: ${err.message}`);
+    }
   }
 }
 
