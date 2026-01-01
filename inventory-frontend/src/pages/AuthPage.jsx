@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/AuthPage.css";
+import { login, register } from "../api";
 
 const AuthPage = ({ onSignIn }) => {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ const AuthPage = ({ onSignIn }) => {
     return `USR-${base.toUpperCase().slice(0, 5).padEnd(5, "0")}`;
   };
 
-  const handleSignInSubmit = (e) => {
+  const handleSignInSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -46,34 +47,18 @@ const AuthPage = ({ onSignIn }) => {
       setError("Please enter both email and password.");
       return;
     }
-
-    const role = inferRoleFromEmail(signInEmail);
-
-    const user = {
-      name: signInEmail.split("@")[0] || "User",
-      firstName: signInEmail.split("@")[0] || "User",
-      middleName: "",
-      lastName: "",
-      dob: "",
-      email: signInEmail,
-      role,
-      id: deriveUserId(signInEmail),
-      avatarUrl: "",
-    };
-
-    if (typeof onSignIn === "function") {
-      onSignIn(user);
-    }
-
-    // redirect based on role
-    if (role === "admin") {
-      navigate("/admin");
-    } else {
+    try {
+      const resp = await login(signInEmail, signInPassword);
+      if (typeof onSignIn === "function") {
+        onSignIn({ user: resp.user, token: resp.token });
+      }
       navigate("/inventory");
+    } catch (err) {
+      setError(err.message || "Login failed");
     }
   };
 
-  const handleSignUpSubmit = (e) => {
+  const handleSignUpSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -99,37 +84,20 @@ const AuthPage = ({ onSignIn }) => {
 
     const role = inferRoleFromEmail(signUpEmail);
 
-    const payload = {
-      firstName,
-      middleName,
-      lastName,
-      dob,
-      email: signUpEmail,
-      password: signUpPassword,
-      role,
-    };
-
-    console.log("Sign up payload (to send to backend later):", payload);
-
-    if (typeof onSignIn === "function") {
-      onSignIn({
-        name: `${firstName} ${middleName} ${lastName}`.replace(/\s+/g, " ").trim(),
+    try {
+      const resp = await register({
         firstName,
-        middleName,
         lastName,
-        dob,
         email: signUpEmail,
+        password: signUpPassword,
         role,
-        id: deriveUserId(signUpEmail),
-        avatarUrl: "",
       });
-    }
-
-    // redirect based on role after sign up
-    if (role === "admin") {
-      navigate("/admin");
-    } else {
+      if (typeof onSignIn === "function") {
+        onSignIn({ user: resp.user, token: resp.token });
+      }
       navigate("/inventory");
+    } catch (err) {
+      setError(err.message || "Sign up failed");
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { setToken as storeToken, clearToken as removeToken, getToken as loadToken } from "./api";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -31,6 +32,7 @@ function ProtectedRoute({ user, requiredRole, children }) {
 function App() {
   const [theme, setTheme] = useState("light");
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState("");
 
   // Load theme from localStorage & apply to document on first mount
   useEffect(() => {
@@ -38,6 +40,18 @@ function App() {
     const initial = stored === "dark" ? "dark" : "light";
     setTheme(initial);
     document.documentElement.setAttribute("data-theme", initial);
+
+    // Load auth from storage
+    const savedUser = localStorage.getItem("authUser");
+    const savedToken = loadToken();
+    if (savedUser && savedToken) {
+      try {
+        setUser(JSON.parse(savedUser));
+        setToken(savedToken);
+      } catch {
+        // ignore parse errors
+      }
+    }
   }, []);
 
   // Whenever theme changes, update <html data-theme="..."> and localStorage
@@ -50,12 +64,22 @@ function App() {
     setTheme(nextTheme);
   };
 
-  const handleSignIn = (userData) => {
-    setUser(userData);
+  const handleSignIn = ({ user: userData, token: tokenValue }) => {
+    if (tokenValue) {
+      storeToken(tokenValue);
+      setToken(tokenValue);
+    }
+    if (userData) {
+      setUser(userData);
+      localStorage.setItem("authUser", JSON.stringify(userData));
+    }
   };
 
   const handleSignOut = () => {
     setUser(null);
+    setToken("");
+    removeToken();
+    localStorage.removeItem("authUser");
   };
 
   const handleUpdateUser = (updates) => {

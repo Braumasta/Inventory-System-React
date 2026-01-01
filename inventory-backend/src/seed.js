@@ -1,4 +1,5 @@
 require("dotenv").config();
+const bcrypt = require("bcryptjs");
 const pool = require("./db");
 
 const sampleItems = [
@@ -33,6 +34,18 @@ const sampleItems = [
 
 async function seed() {
   try {
+    // Seed admin user if none exist
+    const [userCount] = await pool.query("SELECT COUNT(*) AS cnt FROM users");
+    if (userCount[0].cnt === 0) {
+      const adminPass = process.env.SEED_ADMIN_PASSWORD || "ChangeMe123!";
+      const hash = await bcrypt.hash(adminPass, 10);
+      await pool.query(
+        "INSERT INTO users (email, password_hash, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)",
+        ["admin@example.com", hash, "Admin", "User", "admin"]
+      );
+      console.log(`Seeded admin user admin@example.com with password ${adminPass}`);
+    }
+
     const [countRows] = await pool.query("SELECT COUNT(*) AS cnt FROM items");
     if (countRows[0].cnt > 0) {
       console.log("Items table already has data; skipping seed.");
