@@ -46,12 +46,14 @@ const ensureSchema = async () => {
       id INT AUTO_INCREMENT PRIMARY KEY,
       sku VARCHAR(64) UNIQUE,
       name VARCHAR(255) NOT NULL,
+      store_id INT,
       category VARCHAR(100),
       quantity INT NOT NULL DEFAULT 0,
       location VARCHAR(100),
       price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
       image_url TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
     );
   `);
 
@@ -76,6 +78,28 @@ const ensureSchema = async () => {
       FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE RESTRICT
     );
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stores (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      location VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS inventory_events (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      item_id INT,
+      sku VARCHAR(64),
+      action VARCHAR(50),
+      detail TEXT,
+      delta INT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
+    );
+  `);
 };
 
 const signToken = (user) =>
@@ -94,6 +118,11 @@ const authMiddleware = (req, res, next) => {
   } catch (err) {
     return res.status(401).json({ error: "Invalid token" });
   }
+};
+
+const requireAdmin = (req, res, next) => {
+  if (req.user?.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+  next();
 };
 
 // Health check
@@ -245,6 +274,7 @@ const validateItemPayload = (body) => {
       location: body.location ? body.location.toString().trim() : null,
       price: Number.isNaN(price) ? 0 : price,
       imageUrl: body.imageUrl ? body.imageUrl.toString().trim() : null,
+      storeId: body.storeId ? Number(body.storeId) : null,
     },
   };
 };
@@ -255,8 +285,8 @@ app.post("/items", authMiddleware, async (req, res) => {
 
   try {
     const sql = `
-      INSERT INTO items (sku, name, category, quantity, location, price, image_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO items (sku, name, category, quantity, location, price, image_url, store_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
       payload.sku || null,
@@ -266,11 +296,16 @@ app.post("/items", authMiddleware, async (req, res) => {
       payload.location,
       payload.price,
       payload.imageUrl,
+      payload.storeId,
     ];
     const [result] = await pool.query(sql, params);
     const [rows] = await pool.query(
       "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, created_at FROM items WHERE id = ?",
       [result.insertId]
+    );
+    await pool.query(
+      "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, ?, ?, ?, ?)",
+      [result.insertId, payload.sku || null, "create", "Item created", payload.quantity || 0]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -303,6 +338,7 @@ app.put("/items/:id", authMiddleware, async (req, res) => {
       payload.location,
       payload.price,
       payload.imageUrl,
+      payload.storeId,
       id,
     ];
     const [result] = await pool.query(sql, params);
@@ -312,6 +348,10 @@ app.put("/items/:id", authMiddleware, async (req, res) => {
     const [rows] = await pool.query(
       "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, created_at FROM items WHERE id = ?",
       [id]
+    );
+    await pool.query(
+      "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, ?, ?, ?, ?)",
+      [id, payload.sku || null, "update", "Item updated", 0]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -327,10 +367,15 @@ app.delete("/items/:id", authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid id" });
   try {
+    const [itemRows] = await pool.query("SELECT sku FROM items WHERE id = ?", [id]);
     const [result] = await pool.query("DELETE FROM items WHERE id = ?", [id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Item not found" });
     }
+    await pool.query(
+      "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, ?, ?, ?, ?)",
+      [id, itemRows[0]?.sku || null, "delete", "Item deleted", 0]
+    );
     res.json({ success: true });
   } catch (err) {
     console.error("Failed to delete item:", err.message);
@@ -352,7 +397,7 @@ app.post("/orders", authMiddleware, async (req, res) => {
       const itemId = Number(line.itemId);
       const qty = Number(line.quantity);
       if (!itemId || qty <= 0) throw new Error("Invalid item or quantity");
-      const [rows] = await conn.query("SELECT id, price, quantity FROM items WHERE id = ? FOR UPDATE", [itemId]);
+      const [rows] = await conn.query("SELECT id, price, quantity, sku FROM items WHERE id = ? FOR UPDATE", [itemId]);
       if (!rows.length) throw new Error(`Item ${itemId} not found`);
       if (rows[0].quantity < qty) throw new Error(`Insufficient stock for item ${itemId}`);
       total += Number(rows[0].price || 0) * qty;
@@ -367,13 +412,18 @@ app.post("/orders", authMiddleware, async (req, res) => {
     for (const line of items) {
       const itemId = Number(line.itemId);
       const qty = Number(line.quantity);
-      const [rows] = await conn.query("SELECT price FROM items WHERE id = ?", [itemId]);
+      const [rows] = await conn.query("SELECT price, sku FROM items WHERE id = ?", [itemId]);
       const priceEach = Number(rows[0].price || 0);
+      const sku = rows[0]?.sku || null;
       await conn.query(
         "INSERT INTO order_items (order_id, item_id, quantity, price_each) VALUES (?, ?, ?, ?)",
         [orderId, itemId, qty, priceEach]
       );
       await conn.query("UPDATE items SET quantity = quantity - ? WHERE id = ?", [qty, itemId]);
+      await conn.query(
+        "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, ?, ?, ?, ?)",
+        [itemId, sku, "order", "Order placed", -qty]
+      );
     }
 
     await conn.commit();
@@ -443,6 +493,111 @@ app.get("/orders", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error("Fetch orders failed:", err.message);
     res.status(500).json({ error: "Could not fetch orders" });
+  }
+});
+
+// Stores CRUD (simple)
+app.get("/stores", authMiddleware, async (_req, res) => {
+  try {
+    const [rows] = await pool.query("SELECT id, name, location, created_at AS createdAt FROM stores ORDER BY id DESC");
+    res.json(rows);
+  } catch (err) {
+    console.error("Fetch stores failed:", err.message);
+    res.status(500).json({ error: "Could not fetch stores" });
+  }
+});
+
+app.post("/stores", authMiddleware, requireAdmin, async (req, res) => {
+  const name = (req.body?.name || "").toString().trim();
+  const location = (req.body?.location || "").toString().trim();
+  if (!name) return res.status(400).json({ error: "Name required" });
+  try {
+    const [result] = await pool.query(
+      "INSERT INTO stores (name, location) VALUES (?, ?)",
+      [name, location || null]
+    );
+    const [rows] = await pool.query(
+      "SELECT id, name, location, created_at AS createdAt FROM stores WHERE id = ?",
+      [result.insertId]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("Create store failed:", err.message);
+    res.status(500).json({ error: "Could not create store" });
+  }
+});
+
+app.put("/stores/:id", authMiddleware, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const name = (req.body?.name || "").toString().trim();
+  const location = (req.body?.location || "").toString().trim();
+  if (!name) return res.status(400).json({ error: "Name required" });
+  try {
+    const [result] = await pool.query(
+      "UPDATE stores SET name = ?, location = ? WHERE id = ?",
+      [name, location || null, id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: "Store not found" });
+    const [rows] = await pool.query(
+      "SELECT id, name, location, created_at AS createdAt FROM stores WHERE id = ?",
+      [id]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Update store failed:", err.message);
+    res.status(500).json({ error: "Could not update store" });
+  }
+});
+
+app.delete("/stores/:id", authMiddleware, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const [result] = await pool.query("DELETE FROM stores WHERE id = ?", [id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: "Store not found" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Delete store failed:", err.message);
+    res.status(500).json({ error: "Could not delete store" });
+  }
+});
+
+// Users list (admin)
+app.get("/users", authMiddleware, requireAdmin, async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, email, first_name AS firstName, last_name AS lastName, role, created_at AS createdAt FROM users ORDER BY id DESC"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Fetch users failed:", err.message);
+    res.status(500).json({ error: "Could not fetch users" });
+  }
+});
+
+app.put("/users/:id", authMiddleware, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const role = (req.body?.role || "").toString().trim();
+  if (!role) return res.status(400).json({ error: "Role required" });
+  try {
+    const [result] = await pool.query("UPDATE users SET role = ? WHERE id = ?", [role, id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: "User not found" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Update user failed:", err.message);
+    res.status(500).json({ error: "Could not update user" });
+  }
+});
+
+// Inventory events (admin)
+app.get("/inventory-events", authMiddleware, requireAdmin, async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, item_id AS itemId, sku, action, detail, delta, created_at AS createdAt FROM inventory_events ORDER BY id DESC LIMIT 500"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Fetch inventory events failed:", err.message);
+    res.status(500).json({ error: "Could not fetch inventory events" });
   }
 });
 
