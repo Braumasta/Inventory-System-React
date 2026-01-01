@@ -22,21 +22,16 @@ import AccountSecurity from "./pages/AccountSecurity";
 import PurchaseHistory from "./pages/PurchaseHistory";
 import InventoryHistory from "./pages/InventoryHistory";
 
-function ProtectedRoute({ user, requiredRole, children }) {
-  // Prevent rendering children until user is known
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (requiredRole && user.role !== requiredRole) {
-    return <Navigate to="/" replace />;
-  }
-
+function ProtectedRoute({ user, requiredRole, loading, children }) {
+  if (loading) return null;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (requiredRole && user.role !== requiredRole) return <Navigate to="/" replace />;
   return children;
 }
 function App() {
   const [theme, setTheme] = useState("light");
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // Load theme from localStorage & apply to document on first mount
   useEffect(() => {
@@ -49,12 +44,11 @@ function App() {
     const savedUser = localStorage.getItem("authUser");
     const savedToken = loadToken();
     if (savedToken) {
-      // Optimistically set from cached user, then refresh from backend
       if (savedUser) {
         try {
           setUser(JSON.parse(savedUser));
         } catch {
-          // ignore parse errors
+          setUser(null);
         }
       }
       fetchMe()
@@ -64,7 +58,10 @@ function App() {
         })
         .catch(() => {
           handleSignOut();
-        });
+        })
+        .finally(() => setAuthLoading(false));
+    } else {
+      setAuthLoading(false);
     }
   }, []);
 
@@ -92,6 +89,7 @@ function App() {
     setUser(null);
     removeToken();
     localStorage.removeItem("authUser");
+    setAuthLoading(false);
   };
 
   const handleUpdateUser = (updates) => {
@@ -119,7 +117,7 @@ function App() {
           <Route
             path="/account"
             element={
-              <ProtectedRoute user={user}>
+              <ProtectedRoute user={user} loading={authLoading}>
                 <AccountDetails user={user} onUpdateUser={handleUpdateUser} />
               </ProtectedRoute>
             }
@@ -127,7 +125,7 @@ function App() {
           <Route
             path="/account/security"
             element={
-              <ProtectedRoute user={user}>
+              <ProtectedRoute user={user} loading={authLoading}>
                 <AccountSecurity user={user} />
               </ProtectedRoute>
             }
@@ -137,7 +135,7 @@ function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute user={user}>
+              <ProtectedRoute user={user} loading={authLoading}>
                 <AdminDashboard user={user} />
               </ProtectedRoute>
             }
@@ -147,7 +145,7 @@ function App() {
           <Route
             path="/inventory"
             element={
-              <ProtectedRoute user={user}>
+              <ProtectedRoute user={user} loading={authLoading}>
                <InventoryPage user={user} />
               </ProtectedRoute>
             }
@@ -155,7 +153,7 @@ function App() {
           <Route
             path="/inventory-history"
             element={
-              <ProtectedRoute user={user}>
+              <ProtectedRoute user={user} loading={authLoading}>
                 <InventoryHistory />
               </ProtectedRoute>
             }
@@ -164,7 +162,7 @@ function App() {
           <Route
             path="/purchase-history"
             element={
-              <ProtectedRoute user={user}>
+              <ProtectedRoute user={user} loading={authLoading}>
                 <PurchaseHistory />
               </ProtectedRoute>
             }

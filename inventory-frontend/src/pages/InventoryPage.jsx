@@ -435,7 +435,11 @@ const InventoryPage = ({ user }) => {
   };
 
   const handleDeleteProduct = async (item) => {
-    if (!item?.Id) return;
+    if (!item?.Id) {
+      window.alert("Cannot delete item without an ID. Refresh and try again.");
+      setShowDeleteModal(null);
+      return;
+    }
     try {
       await deleteItem(item.Id);
       addHistoryEntry("Delete product", { sku: item.SKU });
