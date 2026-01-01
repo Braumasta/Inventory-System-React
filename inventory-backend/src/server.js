@@ -27,6 +27,16 @@ app.use(express.json());
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 
 const ensureSchema = async () => {
+  const ensureColumn = async (table, column, definition) => {
+    const [cols] = await pool.query(
+      "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?",
+      [table, column]
+    );
+    if (!cols.length) {
+      await pool.query(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+    }
+  };
+
   // Users
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -103,6 +113,15 @@ const ensureSchema = async () => {
       FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
     );
   `);
+
+  // Backfill columns for existing tables
+  await ensureColumn("items", "store_id", "INT NULL");
+  await ensureColumn("inventory_events", "sku", "VARCHAR(64)");
+  await ensureColumn("inventory_events", "detail", "TEXT");
+  await ensureColumn("inventory_events", "delta", "INT");
+  await ensureColumn("users", "middle_name", "VARCHAR(100)");
+  await ensureColumn("users", "dob", "DATE");
+  await ensureColumn("users", "avatar_url", "TEXT");
 };
 
 const signToken = (user) =>

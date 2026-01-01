@@ -30,12 +30,12 @@ const AccountDetails = ({ user, onUpdateUser }) => {
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (avatarPreview && avatarPreview.startsWith("blob:")) {
-      URL.revokeObjectURL(avatarPreview);
-    }
-    const preview = URL.createObjectURL(file);
-    setAvatarPreview(preview);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result?.toString() || "";
+      setAvatarPreview(dataUrl);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
@@ -48,7 +48,13 @@ const AccountDetails = ({ user, onUpdateUser }) => {
       .trim();
 
     try {
-      await updateProfile({ firstName, lastName, avatarUrl: avatarPreview });
+      await updateProfile({
+        firstName,
+        middleName,
+        lastName,
+        dob,
+        avatarUrl: avatarPreview,
+      });
       const refreshed = await fetchMe();
       onUpdateUser?.({
         ...refreshed,
