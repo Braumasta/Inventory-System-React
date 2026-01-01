@@ -332,6 +332,65 @@ app.post("/orders", authMiddleware, async (req, res) => {
   }
 });
 
+// Get orders (current user; admins see all)
+app.get("/orders", authMiddleware, async (req, res) => {
+  const isAdmin = req.user?.role === "admin";
+  const whereClause = isAdmin ? "" : "WHERE o.user_id = ?";
+  const params = isAdmin ? [] : [req.user?.sub || 0];
+  try {
+    const [rows] = await pool.query(
+      `
+      SELECT
+        o.id AS orderId,
+        o.total,
+        o.created_at AS createdAt,
+        o.user_id AS userId,
+        u.email AS userEmail,
+        oi.item_id AS itemId,
+        oi.quantity AS quantity,
+        oi.price_each AS priceEach,
+        i.sku AS sku,
+        i.name AS itemName
+      FROM orders o
+      LEFT JOIN users u ON u.id = o.user_id
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN items i ON i.id = oi.item_id
+      ${whereClause}
+      ORDER BY o.created_at DESC, o.id DESC
+      `,
+      params
+    );
+
+    const grouped = {};
+    for (const row of rows) {
+      if (!grouped[row.orderId]) {
+        grouped[row.orderId] = {
+          id: row.orderId,
+          total: Number(row.total || 0),
+          createdAt: row.createdAt,
+          userId: row.userId,
+          userEmail: row.userEmail,
+          items: [],
+        };
+      }
+      if (row.itemId) {
+        grouped[row.orderId].items.push({
+          itemId: row.itemId,
+          sku: row.sku,
+          name: row.itemName,
+          quantity: Number(row.quantity || 0),
+          priceEach: Number(row.priceEach || 0),
+        });
+      }
+    }
+
+    res.json(Object.values(grouped));
+  } catch (err) {
+    console.error("Fetch orders failed:", err.message);
+    res.status(500).json({ error: "Could not fetch orders" });
+  }
+});
+
 const port = process.env.PORT || 4000;
 
 async function start() {

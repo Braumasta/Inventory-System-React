@@ -65,3 +65,8 @@ export const createOrder = (items) =>
     headers: { ...jsonHeaders, ...authHeaders() },
     body: JSON.stringify({ items }),
   }).then(handleResponse);
+
+export const fetchOrders = () =>
+  fetch(`${API_BASE}/orders`, {
+    headers: authHeaders(),
+  }).then(handleResponse);

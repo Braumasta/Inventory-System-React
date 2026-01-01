@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/Inventory.css";
-import { fetchItems, createItem, updateItem, deleteItem } from "../api";
+import { fetchItems, createItem, updateItem, deleteItem, createOrder } from "../api";
 
 const initialColumns = [
   "Image",
@@ -292,6 +292,7 @@ const InventoryPage = ({ user }) => {
       return [
         ...prev,
         {
+          Id: product.Id,
           SKU: product.SKU,
           Name: product.Name,
           Price: Number(product.Price) || 0,
@@ -303,52 +304,25 @@ const InventoryPage = ({ user }) => {
     setManualQuantity(1);
   };
 
-  const handleConfirmPurchase = () => {
+  const handleConfirmPurchase = async () => {
     if (cartItems.length === 0) return;
-    const purchaseId = `PUR-${Date.now().toString().slice(-8)}`;
-
-    // Update stock quantities
-    setRows((prev) =>
-      prev.map((row) => {
-        const cartItem = cartItems.find(
-          (ci) => ci.SKU.toLowerCase() === (row.SKU || "").toLowerCase()
-        );
-        if (!cartItem) return row;
-        const nextQty = Math.max(0, Number(row.Quantity) - cartItem.Quantity);
-        return { ...row, Quantity: nextQty };
-      })
-    );
-
-    // Build totals + log
-    const subtotal = cartItems.reduce(
-      (sum, item) => sum + (item.Price || 0) * item.Quantity,
-      0
-    );
-    const discountAmount = Math.min(
-      subtotal,
-      (subtotal * discountPercent) / 100
-    );
-    const taxed = Math.max(0, subtotal - discountAmount);
-    const tax = taxed * taxRate;
-    const total = taxed + tax;
-
-    const timestamp = new Date().toISOString();
-    setLogEntries((prev) => [
-      ...prev,
-      {
-        id: purchaseId,
-        timestamp,
-        items: cartItems,
-        subtotal,
-        discountPercent,
-        discountAmount,
-        tax,
-        total,
-      },
-    ]);
-
-    setCartItems([]);
-    setDiscountPercent(0);
+    const payload = cartItems.map((item) => ({
+      itemId: item.Id,
+      quantity: item.Quantity,
+    }));
+    if (payload.some((p) => !p.itemId)) {
+      window.alert("One or more items are missing an ID. Please refresh and try again.");
+      return;
+    }
+    try {
+      await createOrder(payload);
+      await refreshItems();
+      setCartItems([]);
+      setDiscountPercent(0);
+      setError("");
+    } catch (err) {
+      setError(err.message || "Could not place order");
+    }
   };
 
   const cartTotals = useMemo(() => {
