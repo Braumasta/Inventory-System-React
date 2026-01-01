@@ -1,11 +1,5 @@
 require("dotenv").config();
-const bcrypt = require("bcryptjs");
 const pool = require("./db");
-
-const adminEmail = process.env.POPULATE_ADMIN_EMAIL || "admin@example.com";
-const adminPassword = process.env.POPULATE_ADMIN_PASSWORD || "ChangeMe123!";
-const employeeEmail = process.env.POPULATE_EMP_EMAIL || "employee@example.com";
-const employeePassword = process.env.POPULATE_EMP_PASSWORD || "ChangeMe123!";
 
 const stores = [
   { name: "Main Store", location: "Head Office" },
@@ -44,17 +38,6 @@ const items = [
     storeName: "East Branch",
   },
 ];
-
-async function ensureUser(email, password, role, firstName, lastName) {
-  const [rows] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
-  if (rows.length) return rows[0].id;
-  const hash = await bcrypt.hash(password, 10);
-  const [result] = await pool.query(
-    "INSERT INTO users (email, password_hash, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)",
-    [email.toLowerCase(), hash, firstName, lastName, role]
-  );
-  return result.insertId;
-}
 
 async function ensureStores() {
   for (const s of stores) {
@@ -97,10 +80,6 @@ async function main() {
     await ensureStores();
     console.log("Stores ensured");
 
-    const adminId = await ensureUser(adminEmail, adminPassword, "admin", "Admin", "User");
-    const empId = await ensureUser(employeeEmail, employeePassword, "employee", "Employee", "User");
-    console.log(`Users ensured: admin=${adminEmail}, employee=${employeeEmail}`);
-
     await ensureItems();
     console.log("Items ensured");
 
@@ -114,7 +93,7 @@ async function main() {
         const total = priceEach * qty;
         const [orderResult] = await pool.query(
           "INSERT INTO orders (user_id, total) VALUES (?, ?)",
-          [empId, total]
+          [null, total]
         );
         await pool.query(
           "INSERT INTO order_items (order_id, item_id, quantity, price_each) VALUES (?, ?, ?, ?)",
