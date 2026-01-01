@@ -33,7 +33,7 @@ const ensureSchema = async () => {
       [table, column]
     );
     if (!cols.length) {
-      await pool.query(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+      await pool.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
     }
   };
 
