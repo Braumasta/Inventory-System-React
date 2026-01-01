@@ -34,8 +34,11 @@ const ensureSchema = async () => {
       email VARCHAR(255) UNIQUE NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
       first_name VARCHAR(100),
+      middle_name VARCHAR(100),
       last_name VARCHAR(100),
+      dob DATE,
       role VARCHAR(50) DEFAULT 'employee',
+      avatar_url TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -132,22 +135,34 @@ app.get("/health", (_req, res) => {
 
 // Auth
 app.post("/auth/register", async (req, res) => {
-  const { email, password, firstName, lastName, role } = req.body || {};
+  const { email, password, firstName, middleName, lastName, dob, role, avatarUrl } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" });
   }
   try {
     const hash = await bcrypt.hash(password, 10);
     const [result] = await pool.query(
-      "INSERT INTO users (email, password_hash, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)",
-      [email.toLowerCase(), hash, firstName || "", lastName || "", role || "employee"]
+      "INSERT INTO users (email, password_hash, first_name, middle_name, last_name, dob, role, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        email.toLowerCase(),
+        hash,
+        firstName || "",
+        middleName || "",
+        lastName || "",
+        dob || null,
+        role || "employee",
+        avatarUrl || null,
+      ]
     );
     const user = {
       id: result.insertId,
       email: email.toLowerCase(),
       firstName: firstName || "",
+      middleName: middleName || "",
       lastName: lastName || "",
+      dob: dob || null,
       role: role || "employee",
+      avatarUrl: avatarUrl || null,
     };
     const token = signToken(user);
     res.status(201).json({ user, token });
@@ -167,7 +182,7 @@ app.post("/auth/login", async (req, res) => {
   }
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, password_hash, first_name, last_name, role FROM users WHERE email = ?",
+      "SELECT id, email, password_hash, first_name, middle_name, last_name, dob, role, avatar_url FROM users WHERE email = ?",
       [email.toLowerCase()]
     );
     if (!rows.length) return res.status(401).json({ error: "Invalid credentials" });
@@ -180,8 +195,11 @@ app.post("/auth/login", async (req, res) => {
         id: user.id,
         email: user.email,
         firstName: user.first_name,
+        middleName: user.middle_name,
         lastName: user.last_name,
+        dob: user.dob,
         role: user.role,
+        avatarUrl: user.avatar_url,
       },
       token,
     });
@@ -195,7 +213,7 @@ app.post("/auth/login", async (req, res) => {
 app.get("/me", authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, first_name AS firstName, last_name AS lastName, role FROM users WHERE id = ?",
+      "SELECT id, email, first_name AS firstName, middle_name AS middleName, last_name AS lastName, dob, role, avatar_url AS avatarUrl FROM users WHERE id = ?",
       [req.user?.sub]
     );
     if (!rows.length) return res.status(404).json({ error: "User not found" });
@@ -207,11 +225,11 @@ app.get("/me", authMiddleware, async (req, res) => {
 });
 
 app.put("/me", authMiddleware, async (req, res) => {
-  const { firstName = "", lastName = "" } = req.body || {};
+  const { firstName = "", middleName = "", lastName = "", dob = null, avatarUrl = null } = req.body || {};
   try {
     await pool.query(
-      "UPDATE users SET first_name = ?, last_name = ? WHERE id = ?",
-      [firstName, lastName, req.user?.sub]
+      "UPDATE users SET first_name = ?, middle_name = ?, last_name = ?, dob = ?, avatar_url = ? WHERE id = ?",
+      [firstName, middleName, lastName, dob || null, avatarUrl, req.user?.sub]
     );
     res.json({ success: true });
   } catch (err) {
@@ -244,7 +262,7 @@ app.post("/auth/password", authMiddleware, async (req, res) => {
 app.get("/items", async (_req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, created_at FROM items ORDER BY id DESC LIMIT 200"
+      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, store_id AS storeId, created_at FROM items ORDER BY id DESC LIMIT 200"
     );
     res.json(rows);
   } catch (err) {
@@ -327,8 +345,7 @@ app.put("/items/:id", authMiddleware, async (req, res) => {
   try {
     const sql = `
       UPDATE items
-      SET sku = ?, name = ?, category = ?, quantity = ?, location = ?, price = ?, image_url = ?
-      WHERE id = ?
+      SET sku = ?, name = ?, category = ?, quantity = ?, location = ?, price = ?, image_url = ?, store_id = ? WHERE id = ?
     `;
     const params = [
       payload.sku || null,
@@ -621,3 +638,4 @@ async function start() {
 }
 
 start();
+

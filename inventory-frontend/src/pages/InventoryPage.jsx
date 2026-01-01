@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/Inventory.css";
-import { fetchItems, createItem, updateItem, deleteItem, createOrder } from "../api";
+import { fetchItems, createItem, updateItem, deleteItem, createOrder, fetchStores } from "../api";
 
 const initialColumns = [
   "Image",
@@ -59,6 +59,7 @@ const mapApiItemToRow = (item) => ({
   Location: item.location || "",
   Price: Number(item.price) || 0,
   Image: item.imageUrl || "",
+  StoreId: item.storeId || null,
 });
 
 const mapRowToApiPayload = (row) => ({
@@ -106,6 +107,8 @@ const InventoryPage = ({ user }) => {
 
   const [storeList, setStoreList] = useState([]);
   const [currentStoreId, setCurrentStoreId] = useState("");
+  const [stores, setStores] = useState([]);
+  const [selectedStoreId, setSelectedStoreId] = useState(null);
 
   const [columns, setColumns] = useState(initialColumns);
   const [columnNotes, setColumnNotes] = useState({});
@@ -128,6 +131,12 @@ const InventoryPage = ({ user }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [newProductSku, setNewProductSku] = useState("");
+  const [newProductName, setNewProductName] = useState("");
+  const [newProductPrice, setNewProductPrice] = useState(0);
+  const [newProductQuantity, setNewProductQuantity] = useState(0);
+  const [newProductCategory, setNewProductCategory] = useState("");
+  const [newProductLocation, setNewProductLocation] = useState("");
+  const [newProductImage, setNewProductImage] = useState("");
   const [dirty, setDirty] = useState(false);
 
   const refreshItems = async () => {
@@ -218,6 +227,14 @@ const InventoryPage = ({ user }) => {
 
     // Fetch from API
     refreshItems();
+    fetchStores()
+      .then((data) => {
+        setStores(data || []);
+        setSelectedStoreId((data && data[0]?.id) || null);
+      })
+      .catch(() => {
+        // ignore
+      });
   }, []);
 
   useEffect(() => {
@@ -389,19 +406,27 @@ const InventoryPage = ({ user }) => {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     const sku = newProductSku.trim();
-    if (!sku) return;
+    const name = newProductName.trim();
+    if (!sku || !name) return;
     try {
       await createItem({
         sku,
-        name: sku,
-        quantity: 0,
-        price: 0,
-        category: "",
-        location: "",
-        imageUrl: "",
+        name,
+        quantity: Number(newProductQuantity) || 0,
+        price: Number(newProductPrice) || 0,
+        category: newProductCategory.trim(),
+        location: newProductLocation.trim(),
+        imageUrl: newProductImage.trim(),
+        storeId: selectedStoreId || null,
       });
       addHistoryEntry("Add product", { sku });
       setNewProductSku("");
+      setNewProductName("");
+      setNewProductPrice(0);
+      setNewProductQuantity(0);
+      setNewProductCategory("");
+      setNewProductLocation("");
+      setNewProductImage("");
       await refreshItems();
     } catch (err) {
       window.alert(err.message || "Could not add product");
@@ -708,15 +733,15 @@ const InventoryPage = ({ user }) => {
 
         <div className="inventory-grid single-column">
           <section className="inventory-card glass-card">
-            <div className="inventory-card-header">
-              <div>
-                <h3>Inventory table</h3>
-                <p className="inventory-card-subtitle">
+          <div className="inventory-card-header">
+            <div>
+              <h3>Inventory table</h3>
+              <p className="inventory-card-subtitle">
                   Edit quantities inline. Admins can edit all fields; employees are
                   limited to quantities.
-                </p>
-              </div>
+              </p>
             </div>
+          </div>
             <div className="inventory-table-wrapper">
               <table className="inventory-table">
                 <thead>
@@ -1036,12 +1061,67 @@ const InventoryPage = ({ user }) => {
               </div>
             </div>
             <form className="inventory-add-product" onSubmit={handleAddProduct}>
-              <input
-                className="form-input"
-                placeholder="SKU (e.g. SKU-010)"
-                value={newProductSku}
-                onChange={(e) => setNewProductSku(e.target.value)}
-              />
+              <div className="product-grid">
+                <input
+                  className="form-input"
+                  placeholder="SKU (e.g. SKU-010)"
+                  value={newProductSku}
+                  onChange={(e) => setNewProductSku(e.target.value)}
+                />
+                <input
+                  className="form-input"
+                  placeholder="Name"
+                  value={newProductName}
+                  onChange={(e) => setNewProductName(e.target.value)}
+                />
+                <input
+                  className="form-input"
+                  placeholder="Category"
+                  value={newProductCategory}
+                  onChange={(e) => setNewProductCategory(e.target.value)}
+                />
+                <input
+                  className="form-input"
+                  placeholder="Location"
+                  value={newProductLocation}
+                  onChange={(e) => setNewProductLocation(e.target.value)}
+                />
+                <input
+                  className="form-input"
+                  type="number"
+                  placeholder="Quantity"
+                  value={newProductQuantity}
+                  onChange={(e) => setNewProductQuantity(e.target.value)}
+                  min="0"
+                />
+                <input
+                  className="form-input"
+                  type="number"
+                  step="0.01"
+                  placeholder="Price"
+                  value={newProductPrice}
+                  onChange={(e) => setNewProductPrice(e.target.value)}
+                  min="0"
+                />
+                <input
+                  className="form-input"
+                  placeholder="Image URL (optional)"
+                  value={newProductImage}
+                  onChange={(e) => setNewProductImage(e.target.value)}
+                />
+                <select
+                  className="form-input"
+                  value={selectedStoreId || ""}
+                  onChange={(e) => setSelectedStoreId(Number(e.target.value) || null)}
+                >
+                  <option value="">No store</option>
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <button className="btn-primary" type="submit">
                 Add product
               </button>

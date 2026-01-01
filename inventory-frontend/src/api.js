@@ -89,3 +89,39 @@ export const fetchOrders = () =>
   fetch(`${API_BASE}/orders`, {
     headers: authHeaders(),
   }).then(handleResponse);
+
+export const fetchStores = () =>
+  fetch(`${API_BASE}/stores`, { headers: authHeaders() }).then(handleResponse);
+
+export const createStore = (payload) =>
+  fetch(`${API_BASE}/stores`, {
+    method: "POST",
+    headers: { ...jsonHeaders, ...authHeaders() },
+    body: JSON.stringify(payload),
+  }).then(handleResponse);
+
+export const updateStore = (id, payload) =>
+  fetch(`${API_BASE}/stores/${id}`, {
+    method: "PUT",
+    headers: { ...jsonHeaders, ...authHeaders() },
+    body: JSON.stringify(payload),
+  }).then(handleResponse);
+
+export const deleteStore = (id) =>
+  fetch(`${API_BASE}/stores/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  }).then(handleResponse);
+
+export const fetchUsers = () =>
+  fetch(`${API_BASE}/users`, { headers: authHeaders() }).then(handleResponse);
+
+export const updateUserRole = (id, role) =>
+  fetch(`${API_BASE}/users/${id}`, {
+    method: "PUT",
+    headers: { ...jsonHeaders, ...authHeaders() },
+    body: JSON.stringify({ role }),
+  }).then(handleResponse);
+
+export const fetchInventoryEvents = () =>
+  fetch(`${API_BASE}/inventory-events`, { headers: authHeaders() }).then(handleResponse);

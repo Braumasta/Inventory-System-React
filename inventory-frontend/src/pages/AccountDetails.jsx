@@ -48,7 +48,7 @@ const AccountDetails = ({ user, onUpdateUser }) => {
       .trim();
 
     try {
-      await updateProfile({ firstName, lastName });
+      await updateProfile({ firstName, lastName, avatarUrl: avatarPreview });
       const refreshed = await fetchMe();
       onUpdateUser?.({
         ...refreshed,
