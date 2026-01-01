@@ -8,13 +8,7 @@ import App from "./App";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(
-  <BrowserRouter
-    basename={
-      process.env.NODE_ENV === "production"
-        ? "/Inventory-System-React" // GitHub Pages
-        : "/"                        // Localhost
-    }
-  >
+  <BrowserRouter basename="/">
     <App />
   </BrowserRouter>
 );
