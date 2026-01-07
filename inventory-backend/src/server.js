@@ -45,6 +45,41 @@ const ensureSchema = async () => {
       await pool.query(`ALTER TABLE ${table} DROP COLUMN ${column}`);
     }
   };
+  const dropUniqueIndexOnColumn = async (table, column) => {
+    const [rows] = await pool.query(
+      `
+      SELECT index_name AS indexName
+      FROM information_schema.statistics
+      WHERE table_schema = DATABASE()
+        AND table_name = ?
+        AND column_name = ?
+        AND non_unique = 0
+        AND index_name <> 'PRIMARY'
+      GROUP BY index_name
+      HAVING COUNT(*) = 1
+    `,
+      [table, column]
+    );
+    for (const row of rows) {
+      await pool.query(`DROP INDEX \`${row.indexName}\` ON \`${table}\``);
+    }
+  };
+  const ensureUniqueIndex = async (table, indexName, columns) => {
+    const [rows] = await pool.query(
+      `
+      SELECT 1
+      FROM information_schema.statistics
+      WHERE table_schema = DATABASE()
+        AND table_name = ?
+        AND index_name = ?
+      LIMIT 1
+    `,
+      [table, indexName]
+    );
+    if (!rows.length) {
+      await pool.query(`CREATE UNIQUE INDEX \`${indexName}\` ON \`${table}\` (${columns})`);
+    }
+  };
 
   // Users
   await pool.query(`
@@ -65,7 +100,8 @@ const ensureSchema = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS items (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      sku VARCHAR(64) UNIQUE,
+      user_id INT,
+      sku VARCHAR(64),
       name VARCHAR(255) NOT NULL,
       store_id INT,
       category VARCHAR(100),
@@ -74,6 +110,7 @@ const ensureSchema = async () => {
       price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
       image_url TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
     );
   `);
@@ -103,30 +140,22 @@ const ensureSchema = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS stores (
       id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
       name VARCHAR(255) NOT NULL,
       location VARCHAR(255),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS inventory_events (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      item_id INT,
-      sku VARCHAR(64),
-      action VARCHAR(50),
-      detail TEXT,
-      delta INT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
-    );
-  `);
+  await pool.query("DROP TABLE IF EXISTS inventory_events");
 
   // Backfill columns for existing tables
+  await ensureColumn("items", "user_id", "INT NULL");
   await ensureColumn("items", "store_id", "INT NULL");
-  await ensureColumn("inventory_events", "sku", "VARCHAR(64)");
-  await ensureColumn("inventory_events", "detail", "TEXT");
-  await ensureColumn("inventory_events", "delta", "INT");
+  await ensureColumn("stores", "user_id", "INT NULL");
+  await dropUniqueIndexOnColumn("items", "sku");
+  await ensureUniqueIndex("items", "uniq_items_user_sku", "user_id, sku");
   await ensureColumn("users", "middle_name", "VARCHAR(100)");
   await ensureColumn("users", "dob", "DATE");
   await ensureColumn("users", "avatar_url", "TEXT");
@@ -185,6 +214,10 @@ app.post("/auth/register", async (req, res) => {
       dob: dob || null,
       avatarUrl: avatarUrl || null,
     };
+    await pool.query(
+      "INSERT INTO stores (user_id, name, location) VALUES (?, ?, ?)",
+      [user.id, "Main store", "Primary location"]
+    );
     const token = signToken(user);
     res.status(201).json({ user, token });
   } catch (err) {
@@ -258,8 +291,29 @@ app.put("/me", authMiddleware, async (req, res) => {
   }
 });
 
+app.delete("/me", authMiddleware, async (req, res) => {
+  const userId = req.user?.sub || 0;
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query("DELETE FROM orders WHERE user_id = ?", [userId]);
+    await conn.query("DELETE FROM items WHERE user_id = ?", [userId]);
+    await conn.query("DELETE FROM stores WHERE user_id = ?", [userId]);
+    await conn.query("DELETE FROM users WHERE id = ?", [userId]);
+    await conn.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    console.error("Delete account failed:", err.message);
+    res.status(500).json({ error: "Could not delete account" });
+  } finally {
+    conn.release();
+  }
+});
+
 app.post("/auth/password", authMiddleware, async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword) return res.status(400).json({ error: "Current password required" });
   if (!newPassword) return res.status(400).json({ error: "New password required" });
   try {
     const [rows] = await pool.query(
@@ -278,11 +332,12 @@ app.post("/auth/password", authMiddleware, async (req, res) => {
   }
 });
 
-// Example items endpoint (expects a table named `items`)
-app.get("/items", async (_req, res) => {
+// Items
+app.get("/items", authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, store_id AS storeId, created_at FROM items ORDER BY id DESC LIMIT 200"
+      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, store_id AS storeId, created_at FROM items WHERE user_id = ? ORDER BY id DESC LIMIT 200",
+      [req.user?.sub || 0]
     );
     res.json(rows);
   } catch (err) {
@@ -323,10 +378,11 @@ app.post("/items", authMiddleware, async (req, res) => {
 
   try {
     const sql = `
-      INSERT INTO items (sku, name, category, quantity, location, price, image_url, store_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO items (user_id, sku, name, category, quantity, location, price, image_url, store_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
+      req.user?.sub || null,
       payload.sku || null,
       payload.name,
       payload.category,
@@ -338,12 +394,8 @@ app.post("/items", authMiddleware, async (req, res) => {
     ];
     const [result] = await pool.query(sql, params);
     const [rows] = await pool.query(
-      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, created_at FROM items WHERE id = ?",
-      [result.insertId]
-    );
-    await pool.query(
-      "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, ?, ?, ?, ?)",
-      [result.insertId, payload.sku || null, "create", "Item created", payload.quantity || 0]
+      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, created_at FROM items WHERE id = ? AND user_id = ?",
+      [result.insertId, req.user?.sub || 0]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -365,7 +417,7 @@ app.put("/items/:id", authMiddleware, async (req, res) => {
   try {
     const sql = `
       UPDATE items
-      SET sku = ?, name = ?, category = ?, quantity = ?, location = ?, price = ?, image_url = ?, store_id = ? WHERE id = ?
+      SET sku = ?, name = ?, category = ?, quantity = ?, location = ?, price = ?, image_url = ?, store_id = ? WHERE id = ? AND user_id = ?
     `;
     const params = [
       payload.sku || null,
@@ -377,18 +429,15 @@ app.put("/items/:id", authMiddleware, async (req, res) => {
       payload.imageUrl,
       payload.storeId,
       id,
+      req.user?.sub || 0,
     ];
     const [result] = await pool.query(sql, params);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Item not found" });
     }
     const [rows] = await pool.query(
-      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, created_at FROM items WHERE id = ?",
-      [id]
-    );
-    await pool.query(
-      "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, ?, ?, ?, ?)",
-      [id, payload.sku || null, "update", "Item updated", 0]
+      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, created_at FROM items WHERE id = ? AND user_id = ?",
+      [id, req.user?.sub || 0]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -404,15 +453,10 @@ app.delete("/items/:id", authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid id" });
   try {
-    const [itemRows] = await pool.query("SELECT sku FROM items WHERE id = ?", [id]);
-    const [result] = await pool.query("DELETE FROM items WHERE id = ?", [id]);
+    const [result] = await pool.query("DELETE FROM items WHERE id = ? AND user_id = ?", [id, req.user?.sub || 0]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Item not found" });
     }
-    await pool.query(
-      "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, ?, ?, ?, ?)",
-      [id, itemRows[0]?.sku || null, "delete", "Item deleted", 0]
-    );
     res.json({ success: true });
   } catch (err) {
     console.error("Failed to delete item:", err.message);
@@ -434,7 +478,10 @@ app.post("/orders", authMiddleware, async (req, res) => {
       const itemId = Number(line.itemId);
       const qty = Number(line.quantity);
       if (!itemId || qty <= 0) throw new Error("Invalid item or quantity");
-      const [rows] = await conn.query("SELECT id, price, quantity, sku FROM items WHERE id = ? FOR UPDATE", [itemId]);
+      const [rows] = await conn.query(
+        "SELECT id, price, quantity, sku FROM items WHERE id = ? AND user_id = ? FOR UPDATE",
+        [itemId, req.user?.sub || 0]
+      );
       if (!rows.length) throw new Error(`Item ${itemId} not found`);
       if (rows[0].quantity < qty) throw new Error(`Insufficient stock for item ${itemId}`);
       total += Number(rows[0].price || 0) * qty;
@@ -449,18 +496,21 @@ app.post("/orders", authMiddleware, async (req, res) => {
     for (const line of items) {
       const itemId = Number(line.itemId);
       const qty = Number(line.quantity);
-      const [rows] = await conn.query("SELECT price, sku FROM items WHERE id = ?", [itemId]);
+      const [rows] = await conn.query(
+        "SELECT price, sku FROM items WHERE id = ? AND user_id = ?",
+        [itemId, req.user?.sub || 0]
+      );
       const priceEach = Number(rows[0].price || 0);
       const sku = rows[0]?.sku || null;
       await conn.query(
         "INSERT INTO order_items (order_id, item_id, quantity, price_each) VALUES (?, ?, ?, ?)",
         [orderId, itemId, qty, priceEach]
       );
-      await conn.query("UPDATE items SET quantity = quantity - ? WHERE id = ?", [qty, itemId]);
-      await conn.query(
-        "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, ?, ?, ?, ?)",
-        [itemId, sku, "order", "Order placed", -qty]
-      );
+      await conn.query("UPDATE items SET quantity = quantity - ? WHERE id = ? AND user_id = ?", [
+        qty,
+        itemId,
+        req.user?.sub || 0,
+      ]);
     }
 
     await conn.commit();
@@ -535,7 +585,10 @@ app.get("/orders", authMiddleware, async (req, res) => {
 // Stores CRUD (simple)
 app.get("/stores", authMiddleware, async (_req, res) => {
   try {
-    const [rows] = await pool.query("SELECT id, name, location, created_at AS createdAt FROM stores ORDER BY id DESC");
+    const [rows] = await pool.query(
+      "SELECT id, name, location, created_at AS createdAt FROM stores WHERE user_id = ? ORDER BY id DESC",
+      [_req.user?.sub || 0]
+    );
     res.json(rows);
   } catch (err) {
     console.error("Fetch stores failed:", err.message);
@@ -549,12 +602,12 @@ app.post("/stores", authMiddleware, async (req, res) => {
   if (!name) return res.status(400).json({ error: "Name required" });
   try {
     const [result] = await pool.query(
-      "INSERT INTO stores (name, location) VALUES (?, ?)",
-      [name, location || null]
+      "INSERT INTO stores (user_id, name, location) VALUES (?, ?, ?)",
+      [req.user?.sub || null, name, location || null]
     );
     const [rows] = await pool.query(
-      "SELECT id, name, location, created_at AS createdAt FROM stores WHERE id = ?",
-      [result.insertId]
+      "SELECT id, name, location, created_at AS createdAt FROM stores WHERE id = ? AND user_id = ?",
+      [result.insertId, req.user?.sub || 0]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -570,13 +623,13 @@ app.put("/stores/:id", authMiddleware, async (req, res) => {
   if (!name) return res.status(400).json({ error: "Name required" });
   try {
     const [result] = await pool.query(
-      "UPDATE stores SET name = ?, location = ? WHERE id = ?",
-      [name, location || null, id]
+      "UPDATE stores SET name = ?, location = ? WHERE id = ? AND user_id = ?",
+      [name, location || null, id, req.user?.sub || 0]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: "Store not found" });
     const [rows] = await pool.query(
-      "SELECT id, name, location, created_at AS createdAt FROM stores WHERE id = ?",
-      [id]
+      "SELECT id, name, location, created_at AS createdAt FROM stores WHERE id = ? AND user_id = ?",
+      [id, req.user?.sub || 0]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -588,7 +641,7 @@ app.put("/stores/:id", authMiddleware, async (req, res) => {
 app.delete("/stores/:id", authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
   try {
-    const [result] = await pool.query("DELETE FROM stores WHERE id = ?", [id]);
+    const [result] = await pool.query("DELETE FROM stores WHERE id = ? AND user_id = ?", [id, req.user?.sub || 0]);
     if (result.affectedRows === 0) return res.status(404).json({ error: "Store not found" });
     res.json({ success: true });
   } catch (err) {
@@ -597,26 +650,15 @@ app.delete("/stores/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// Inventory events
-app.get("/inventory-events", authMiddleware, async (_req, res) => {
-  try {
-    const [rows] = await pool.query(
-      "SELECT id, item_id AS itemId, sku, action, detail, delta, created_at AS createdAt FROM inventory_events ORDER BY id DESC LIMIT 500"
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error("Fetch inventory events failed:", err.message);
-    res.status(500).json({ error: "Could not fetch inventory events" });
-  }
-});
-
 app.get("/dashboard", authMiddleware, async (_req, res) => {
   try {
     const [[itemsRow]] = await pool.query(
-      "SELECT COALESCE(SUM(quantity), 0) AS totalItems FROM items"
+      "SELECT COALESCE(SUM(quantity), 0) AS totalItems FROM items WHERE user_id = ?",
+      [_req.user?.sub || 0]
     );
     const [[salesRow]] = await pool.query(
-      "SELECT COALESCE(SUM(total), 0) AS totalSales FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"
+      "SELECT COALESCE(SUM(total), 0) AS totalSales FROM orders WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)",
+      [_req.user?.sub || 0]
     );
     const [recentSales] = await pool.query(
       `
@@ -629,10 +671,12 @@ app.get("/dashboard", authMiddleware, async (_req, res) => {
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.user_id = ?
       GROUP BY o.id
       ORDER BY o.created_at DESC
       LIMIT 20
-      `
+      `,
+      [_req.user?.sub || 0]
     );
 
     res.json({

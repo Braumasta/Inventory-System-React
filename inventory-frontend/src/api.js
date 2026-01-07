@@ -23,7 +23,8 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-export const fetchItems = () => fetch(`${API_BASE}/items`).then(handleResponse);
+export const fetchItems = () =>
+  fetch(`${API_BASE}/items`, { headers: authHeaders() }).then(handleResponse);
 
 export const createItem = (payload) =>
   fetch(`${API_BASE}/items`, {
@@ -78,6 +79,12 @@ export const changePassword = (currentPassword, newPassword) =>
     body: JSON.stringify({ currentPassword, newPassword }),
   }).then(handleResponse);
 
+export const deleteAccount = () =>
+  fetch(`${API_BASE}/me`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  }).then(handleResponse);
+
 export const createOrder = (items) =>
   fetch(`${API_BASE}/orders`, {
     method: "POST",
@@ -112,9 +119,6 @@ export const deleteStore = (id) =>
     method: "DELETE",
     headers: authHeaders(),
   }).then(handleResponse);
-
-export const fetchInventoryEvents = () =>
-  fetch(`${API_BASE}/inventory-events`, { headers: authHeaders() }).then(handleResponse);
 
 export const fetchDashboard = () =>
   fetch(`${API_BASE}/dashboard`, { headers: authHeaders() }).then(handleResponse);

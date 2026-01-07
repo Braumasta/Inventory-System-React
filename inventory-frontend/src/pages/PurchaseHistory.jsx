@@ -31,7 +31,7 @@ const PurchaseHistory = () => {
           <p className="inventory-kicker">History</p>
           <h1 className="inventory-title">Purchase history</h1>
           <p className="inventory-subtitle">
-            Orders created through the inventory cart.
+            Review recent orders and item totals from your workspace.
           </p>
         </div>
         <div className="inventory-header-actions">
@@ -41,7 +41,7 @@ const PurchaseHistory = () => {
         </div>
       </header>
 
-      <section className="inventory-shell card">
+      <section className="purchase-shell card">
         {error && <div className="alert error">{error}</div>}
         {loading && <div className="alert info">Loading orders...</div>}
 
@@ -51,11 +51,11 @@ const PurchaseHistory = () => {
           </div>
         )}
 
-        <div className="purchase-history">
+        <div className="purchase-grid">
           {orders.map((order) => (
-            <div key={order.id} className="purchase-card glass-card">
+            <article key={order.id} className="purchase-card glass-card">
               <header className="purchase-card-header">
-                <div>
+                <div className="purchase-header-stack">
                   <div className="purchase-id">Order #{order.id}</div>
                   <div className="purchase-meta">
                     <span>
@@ -63,11 +63,11 @@ const PurchaseHistory = () => {
                         ? new Date(order.createdAt).toLocaleString()
                         : ""}
                     </span>
-                    {order.userEmail && <span> • {order.userEmail}</span>}
+                    {order.userEmail && <span>   {order.userEmail}</span>}
                   </div>
                 </div>
-                <div className="purchase-meta">
-                  <strong>${Number(order.total || 0).toFixed(2)}</strong>
+                <div className="purchase-total">
+                  ${Number(order.total || 0).toFixed(2)}
                 </div>
               </header>
 
@@ -87,7 +87,7 @@ const PurchaseHistory = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </section>
@@ -96,3 +96,5 @@ const PurchaseHistory = () => {
 };
 
 export default PurchaseHistory;
+
+

@@ -52,8 +52,13 @@ function App() {
       }
       fetchMe()
         .then((me) => {
-          setUser(me);
-          localStorage.setItem("authUser", JSON.stringify(me));
+          const fullName = [me.firstName, me.middleName, me.lastName]
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+          const nextUser = { ...me, name: fullName || me.firstName || me.email };
+          setUser(nextUser);
+          localStorage.setItem("authUser", JSON.stringify(nextUser));
         })
         .catch(() => {
           handleSignOut();
@@ -79,8 +84,13 @@ function App() {
       storeToken(tokenValue);
     }
     if (userData) {
-      setUser(userData);
-      localStorage.setItem("authUser", JSON.stringify(userData));
+      const fullName = [userData.firstName, userData.middleName, userData.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      const nextUser = { ...userData, name: fullName || userData.firstName || userData.email };
+      setUser(nextUser);
+      localStorage.setItem("authUser", JSON.stringify(nextUser));
     }
   };
 
@@ -139,7 +149,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
 
           {/* Inventory */}
           <Route

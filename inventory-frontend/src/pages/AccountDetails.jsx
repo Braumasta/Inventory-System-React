@@ -19,25 +19,6 @@ const AccountDetails = ({ user, onUpdateUser }) => {
     setAvatarPreview(user?.avatarUrl || "");
   }, [user]);
 
-  useEffect(() => {
-    return () => {
-      if (avatarPreview && avatarPreview.startsWith("blob:")) {
-        URL.revokeObjectURL(avatarPreview);
-      }
-    };
-  }, [avatarPreview]);
-
-  const handleAvatarChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result?.toString() || "";
-      setAvatarPreview(dataUrl);
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
@@ -49,11 +30,11 @@ const AccountDetails = ({ user, onUpdateUser }) => {
 
     try {
       await updateProfile({
-        firstName,
-        middleName,
-        lastName,
+        firstName: firstName.trim(),
+        middleName: middleName.trim(),
+        lastName: lastName.trim(),
         dob,
-        avatarUrl: avatarPreview,
+        avatarUrl: avatarPreview.trim(),
       });
       const refreshed = await fetchMe();
       onUpdateUser?.({
@@ -102,10 +83,19 @@ const AccountDetails = ({ user, onUpdateUser }) => {
                 <div className="avatar-large-fallback">{initials}</div>
               )}
             </div>
-            <label className="avatar-upload-btn">
-              Change photo
-              <input type="file" accept="image/*" onChange={handleAvatarChange} />
-            </label>
+            <div className="account-input-row">
+              <label className="account-label" htmlFor="avatar-url">
+                Photo URL
+              </label>
+              <input
+                id="avatar-url"
+                type="url"
+                className="account-input"
+                placeholder="https://example.com/photo.jpg"
+                value={avatarPreview}
+                onChange={(e) => setAvatarPreview(e.target.value)}
+              />
+            </div>
             <div className="account-id">
               Unique ID: <strong>{user?.id || "USR-00000"}</strong>
             </div>

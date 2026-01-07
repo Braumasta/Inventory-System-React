@@ -103,6 +103,8 @@ const saveStoreData = (storeId, data) => {
 
 const InventoryPage = ({ user }) => {
   const displayName = user?.name || "User";
+  const storeListKey = user?.id ? `${STORE_LIST_KEY}-${user.id}` : STORE_LIST_KEY;
+  const selectedStoreKey = user?.id ? `${SELECTED_STORE_KEY}-${user.id}` : SELECTED_STORE_KEY;
   const canEditAll = true;
 
   const [storeList, setStoreList] = useState([]);
@@ -196,7 +198,7 @@ const InventoryPage = ({ user }) => {
     // Load stores list and selected store
     let list = [];
     try {
-      const rawList = localStorage.getItem(STORE_LIST_KEY);
+      const rawList = localStorage.getItem(storeListKey);
       if (rawList) list = JSON.parse(rawList);
     } catch (err) {
       list = [];
@@ -207,12 +209,12 @@ const InventoryPage = ({ user }) => {
       const defaultStore = makeDefaultStore(defaultId, "Main store");
       list = [{ id: defaultId, name: "Main store" }];
       saveStoreData(defaultId, defaultStore);
-      localStorage.setItem(STORE_LIST_KEY, JSON.stringify(list));
-      localStorage.setItem(SELECTED_STORE_KEY, defaultId);
+      localStorage.setItem(storeListKey, JSON.stringify(list));
+      localStorage.setItem(selectedStoreKey, defaultId);
     }
 
     const storedSelected =
-      localStorage.getItem(SELECTED_STORE_KEY) || list[0].id;
+      localStorage.getItem(selectedStoreKey) || list[0].id;
 
     setStoreList(list);
     setCurrentStoreId(storedSelected);
@@ -235,13 +237,13 @@ const InventoryPage = ({ user }) => {
       .catch(() => {
         // ignore
       });
-  }, []);
+  }, [storeListKey, selectedStoreKey]);
 
   useEffect(() => {
     if (storeList.length) {
-      localStorage.setItem(STORE_LIST_KEY, JSON.stringify(storeList));
+      localStorage.setItem(storeListKey, JSON.stringify(storeList));
     }
-  }, [storeList]);
+  }, [storeList, storeListKey]);
 
   const addHistoryEntry = (action, payload = {}) => {
     const entry = {
@@ -488,7 +490,7 @@ const InventoryPage = ({ user }) => {
 
   const handleStoreChange = (id) => {
     setCurrentStoreId(id);
-    localStorage.setItem(SELECTED_STORE_KEY, id);
+    localStorage.setItem(selectedStoreKey, id);
     const data = loadStoreData(id) || makeDefaultStore(id, "New store");
     setColumns(data.columns || initialColumns);
     setColumnNotes(data.columnNotes || {});
@@ -506,7 +508,7 @@ const InventoryPage = ({ user }) => {
     const id = `store-${Date.now()}`;
     const updatedList = [...storeList, { id, name }];
     setStoreList(updatedList);
-    localStorage.setItem(STORE_LIST_KEY, JSON.stringify(updatedList));
+    localStorage.setItem(storeListKey, JSON.stringify(updatedList));
     const newData = makeDefaultStore(id, name);
     saveStoreData(id, newData);
     handleStoreChange(id);
@@ -1053,65 +1055,102 @@ const InventoryPage = ({ user }) => {
           </div>
           <form className="inventory-add-product" onSubmit={handleAddProduct}>
             <div className="product-grid">
-              <input
-                className="form-input"
-                placeholder="SKU (e.g. SKU-010)"
-                value={newProductSku}
-                onChange={(e) => setNewProductSku(e.target.value)}
-              />
-              <input
-                className="form-input"
-                placeholder="Name"
-                value={newProductName}
-                onChange={(e) => setNewProductName(e.target.value)}
-              />
-              <input
-                className="form-input"
-                placeholder="Category"
-                value={newProductCategory}
-                onChange={(e) => setNewProductCategory(e.target.value)}
-              />
-              <input
-                className="form-input"
-                placeholder="Location"
-                value={newProductLocation}
-                onChange={(e) => setNewProductLocation(e.target.value)}
-              />
-              <input
-                className="form-input"
-                type="number"
-                placeholder="Quantity"
-                value={newProductQuantity}
-                onChange={(e) => setNewProductQuantity(e.target.value)}
-                min="0"
-              />
-              <input
-                className="form-input"
-                type="number"
-                step="0.01"
-                placeholder="Price"
-                value={newProductPrice}
-                onChange={(e) => setNewProductPrice(e.target.value)}
-                min="0"
-              />
-              <input
-                className="form-input"
-                placeholder="Image URL (optional)"
-                value={newProductImage}
-                onChange={(e) => setNewProductImage(e.target.value)}
-              />
-              <select
-                className="form-input"
-                value={selectedStoreId || ""}
-                onChange={(e) => setSelectedStoreId(Number(e.target.value) || null)}
-              >
-                <option value="">No store</option>
-                {stores.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <div className="product-field">
+                <label className="form-label" htmlFor="new-sku">SKU</label>
+                <input
+                  id="new-sku"
+                  className="form-input"
+                  placeholder="SKU-010"
+                  value={newProductSku}
+                  onChange={(e) => setNewProductSku(e.target.value)}
+                />
+              </div>
+              <div className="product-field">
+                <label className="form-label" htmlFor="new-name">Name</label>
+                <input
+                  id="new-name"
+                  className="form-input"
+                  placeholder="Product name"
+                  value={newProductName}
+                  onChange={(e) => setNewProductName(e.target.value)}
+                />
+              </div>
+              <div className="product-field">
+                <label className="form-label" htmlFor="new-category">Category</label>
+                <input
+                  id="new-category"
+                  className="form-input"
+                  placeholder="Accessories"
+                  value={newProductCategory}
+                  onChange={(e) => setNewProductCategory(e.target.value)}
+                />
+              </div>
+              <div className="product-field">
+                <label className="form-label" htmlFor="new-location">Location</label>
+                <input
+                  id="new-location"
+                  className="form-input"
+                  placeholder="Aisle 2"
+                  value={newProductLocation}
+                  onChange={(e) => setNewProductLocation(e.target.value)}
+                />
+              </div>
+              <div className="product-field">
+                <label className="form-label" htmlFor="new-quantity">Quantity</label>
+                <input
+                  id="new-quantity"
+                  className="form-input"
+                  type="number"
+                  placeholder="0"
+                  value={newProductQuantity}
+                  onChange={(e) => setNewProductQuantity(e.target.value)}
+                  min="0"
+                />
+              </div>
+              <div className="product-field">
+                <label className="form-label" htmlFor="new-price">Price</label>
+                <input
+                  id="new-price"
+                  className="form-input"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={newProductPrice}
+                  onChange={(e) => setNewProductPrice(e.target.value)}
+                  min="0"
+                />
+              </div>
+              <div className="product-field product-field-wide">
+                <label className="form-label" htmlFor="new-image-url">Image URL</label>
+                <input
+                  id="new-image-url"
+                  className="form-input"
+                  placeholder="https://example.com/image.jpg"
+                  value={newProductImage}
+                  onChange={(e) => setNewProductImage(e.target.value)}
+                />
+                {newProductImage && (
+                  <div className="product-image-preview">
+                    <img src={newProductImage} alt="Preview" />
+                  </div>
+                )}
+              </div>
+              <div className="product-field">
+                <label className="form-label" htmlFor="new-store">Store</label>
+                <select
+                  id="new-store"
+                  className="form-input"
+                  value={selectedStoreId || ""}
+                  onChange={(e) => setSelectedStoreId(Number(e.target.value) || null)}
+                >
+                  <option value="">No store</option>
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <button className="btn-primary" type="submit">
               Add product

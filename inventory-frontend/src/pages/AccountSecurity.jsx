@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "../styles/AccountSecurity.css";
-import { changePassword } from "../api";
+import { changePassword, deleteAccount } from "../api";
 
 const AccountSecurity = () => {
   const [status, setStatus] = useState("");
@@ -8,6 +8,7 @@ const AccountSecurity = () => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const setStatusMessage = (message, type = "info") => {
     setStatus(message);
@@ -16,6 +17,10 @@ const AccountSecurity = () => {
 
   const handlePasswordSave = async (e) => {
     e.preventDefault();
+    if (!currentPassword) {
+      setStatusMessage("Enter your current password.", "error");
+      return;
+    }
     if (!newPassword || newPassword.length < 8) {
       setStatusMessage("Password must be at least 8 characters.", "error");
       return;
@@ -32,6 +37,23 @@ const AccountSecurity = () => {
       setConfirmPassword("");
     } catch (err) {
       setStatusMessage(err.message || "Could not update password.", "error");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm.trim().toUpperCase() !== "DELETE") {
+      setStatusMessage("Type DELETE to confirm account removal.", "error");
+      return;
+    }
+    try {
+      await deleteAccount();
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("authUser");
+      setStatusMessage("Account deleted. You can now sign up again.", "success");
+      setDeleteConfirm("");
+      window.location.href = "/auth";
+    } catch (err) {
+      setStatusMessage(err.message || "Could not delete account.", "error");
     }
   };
 
@@ -108,13 +130,28 @@ const AccountSecurity = () => {
             <div>
               <h2 className="security-card-title">Delete my account</h2>
               <p className="security-card-subtitle">
-                Account deletion is not enabled in this demo.
+                This permanently removes your profile, stores, items, and orders.
               </p>
             </div>
           </div>
-          <div className="account-meta-row">
-            <span>Deletion</span>
-            <span className="account-meta-value">Disabled in demo</span>
+          <div className="security-delete">
+            <label className="account-label" htmlFor="delete-confirm">
+              Type DELETE to confirm
+            </label>
+            <input
+              id="delete-confirm"
+              className="account-input"
+              placeholder="DELETE"
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn-primary danger"
+              onClick={handleDeleteAccount}
+            >
+              Delete account
+            </button>
           </div>
         </section>
 

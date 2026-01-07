@@ -73,7 +73,9 @@ const AuthPage = ({ onSignIn }) => {
     try {
       const resp = await register({
         firstName,
+        middleName,
         lastName,
+        dob,
         email: signUpEmail,
         password: signUpPassword,
       });
