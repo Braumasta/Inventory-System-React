@@ -1,13 +1,15 @@
 const API_BASE = process.env.REACT_APP_API_URL || "";
-const TOKEN_KEY = "authToken";
+let authToken = "";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
-export const getToken = () => localStorage.getItem(TOKEN_KEY) || "";
+export const getToken = () => authToken;
 export const setToken = (token) => {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
+  authToken = token || "";
 };
-export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+export const clearToken = () => {
+  authToken = "";
+};
 
 const authHeaders = () => {
   const token = getToken();
@@ -23,7 +25,8 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-export const fetchItems = () => fetch(`${API_BASE}/items`).then(handleResponse);
+export const fetchItems = () =>
+  fetch(`${API_BASE}/items`, { headers: authHeaders() }).then(handleResponse);
 
 export const createItem = (payload) =>
   fetch(`${API_BASE}/items`, {
@@ -78,6 +81,12 @@ export const changePassword = (currentPassword, newPassword) =>
     body: JSON.stringify({ currentPassword, newPassword }),
   }).then(handleResponse);
 
+export const deleteAccount = () =>
+  fetch(`${API_BASE}/me`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  }).then(handleResponse);
+
 export const createOrder = (items) =>
   fetch(`${API_BASE}/orders`, {
     method: "POST",
@@ -112,9 +121,6 @@ export const deleteStore = (id) =>
     method: "DELETE",
     headers: authHeaders(),
   }).then(handleResponse);
-
-export const fetchInventoryEvents = () =>
-  fetch(`${API_BASE}/inventory-events`, { headers: authHeaders() }).then(handleResponse);
 
 export const fetchDashboard = () =>
   fetch(`${API_BASE}/dashboard`, { headers: authHeaders() }).then(handleResponse);

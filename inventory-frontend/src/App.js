@@ -32,42 +32,31 @@ function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Load theme from localStorage & apply to document on first mount
-  useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    const initial = stored === "dark" ? "dark" : "light";
-    setTheme(initial);
-    document.documentElement.setAttribute("data-theme", initial);
-
-    // Load auth from storage
-    const savedUser = localStorage.getItem("authUser");
-    const savedToken = loadToken();
-    if (savedToken) {
-      if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch {
-          setUser(null);
-        }
-      }
-      fetchMe()
-        .then((me) => {
-          setUser(me);
-          localStorage.setItem("authUser", JSON.stringify(me));
-        })
-        .catch(() => {
-          handleSignOut();
-        })
-        .finally(() => setAuthLoading(false));
-    } else {
-      setAuthLoading(false);
-    }
-  }, []);
-
-  // Whenever theme changes, update <html data-theme="..."> and localStorage
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
+    const savedToken = loadToken();
+    if (!savedToken) {
+      setAuthLoading(false);
+      return;
+    }
+    fetchMe()
+      .then((me) => {
+        const fullName = [me.firstName, me.middleName, me.lastName]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        const nextUser = { ...me, name: fullName || me.firstName || me.email };
+        setUser(nextUser);
+      })
+      .catch(() => {
+        handleSignOut();
+      })
+      .finally(() => setAuthLoading(false));
+  }, []);
+
+  // Whenever theme changes, update <html data-theme="...">
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
   const handleThemeChange = (nextTheme) => {
@@ -79,15 +68,18 @@ function App() {
       storeToken(tokenValue);
     }
     if (userData) {
-      setUser(userData);
-      localStorage.setItem("authUser", JSON.stringify(userData));
+      const fullName = [userData.firstName, userData.middleName, userData.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      const nextUser = { ...userData, name: fullName || userData.firstName || userData.email };
+      setUser(nextUser);
     }
   };
 
   const handleSignOut = () => {
     setUser(null);
     removeToken();
-    localStorage.removeItem("authUser");
     setAuthLoading(false);
   };
 
@@ -139,7 +131,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
 
           {/* Inventory */}
           <Route

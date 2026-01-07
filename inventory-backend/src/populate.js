@@ -6,15 +6,15 @@ const pool = require("./db");
 // ===== Seed data =====
 const users = [
   {
-    email: "admin@example.com",
+    email: "owner@example.com",
     password: process.env.POPULATE_ADMIN_PASSWORD || "ChangeMe123!",
-    firstName: "Admin",
+    firstName: "Owner",
     lastName: "User",
   },
   {
-    email: "employee@example.com",
+    email: "staff@example.com",
     password: process.env.POPULATE_EMP_PASSWORD || "ChangeMe123!",
-    firstName: "Employee",
+    firstName: "Staff",
     lastName: "User",
   },
 ];
@@ -108,6 +108,59 @@ async function ensureColumn(dbName, table, column, definition) {
   }
 }
 
+async function dropUniqueIndexOnColumn(dbName, table, column) {
+  if (!dbName) {
+    throw new Error(
+      "Could not detect database name. Set MYSQLDATABASE (or DB_NAME) in Railway Variables."
+    );
+  }
+
+  const [rows] = await pool.query(
+    `
+    SELECT index_name AS indexName
+    FROM information_schema.statistics
+    WHERE table_schema = ?
+      AND table_name = ?
+      AND column_name = ?
+      AND non_unique = 0
+      AND index_name <> 'PRIMARY'
+    GROUP BY index_name
+    HAVING COUNT(*) = 1
+  `,
+    [dbName, table, column]
+  );
+
+  for (const row of rows) {
+    await pool.query(`DROP INDEX \`${row.indexName}\` ON \`${table}\``);
+    console.log(`Dropped index: ${table}.${row.indexName}`);
+  }
+}
+
+async function ensureUniqueIndex(dbName, table, indexName, columns) {
+  if (!dbName) {
+    throw new Error(
+      "Could not detect database name. Set MYSQLDATABASE (or DB_NAME) in Railway Variables."
+    );
+  }
+
+  const [rows] = await pool.query(
+    `
+    SELECT 1
+    FROM information_schema.statistics
+    WHERE table_schema = ?
+      AND table_name = ?
+      AND index_name = ?
+    LIMIT 1
+  `,
+    [dbName, table, indexName]
+  );
+
+  if (!rows.length) {
+    await pool.query(`CREATE UNIQUE INDEX \`${indexName}\` ON \`${table}\` (${columns})`);
+    console.log(`Added index: ${table}.${indexName}`);
+  }
+}
+
 async function ensureDropColumn(dbName, table, column) {
   if (!dbName) {
     throw new Error(
@@ -154,9 +207,11 @@ async function ensureTables(dbName) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS stores (
       id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
       name VARCHAR(255) NOT NULL,
       location VARCHAR(255),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
 
@@ -164,7 +219,8 @@ async function ensureTables(dbName) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS items (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      sku VARCHAR(64) UNIQUE,
+      user_id INT,
+      sku VARCHAR(64),
       name VARCHAR(255) NOT NULL,
       store_id INT,
       category VARCHAR(100),
@@ -173,6 +229,7 @@ async function ensureTables(dbName) {
       price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
       image_url TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
     );
   `);
@@ -201,54 +258,29 @@ async function ensureTables(dbName) {
     );
   `);
 
-  // ---- inventory_events
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS inventory_events (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      item_id INT,
-      sku VARCHAR(64),
-      action VARCHAR(50),
-      detail TEXT,
-      delta INT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
-    );
-  `);
-
   // ---- schema upgrades for old tables
+  await ensureColumn(dbName, "stores", "user_id", "INT NULL");
+  await ensureColumn(dbName, "items", "user_id", "INT NULL");
   await ensureColumn(dbName, "items", "store_id", "INT NULL");
-  await ensureColumn(dbName, "items", "sku", "VARCHAR(64) UNIQUE");
+  await ensureColumn(dbName, "items", "sku", "VARCHAR(64)");
   await ensureColumn(dbName, "items", "name", "VARCHAR(255)");
   await ensureColumn(dbName, "items", "category", "VARCHAR(100)");
   await ensureColumn(dbName, "items", "quantity", "INT");
   await ensureColumn(dbName, "items", "location", "VARCHAR(100)");
   await ensureColumn(dbName, "items", "price", "DECIMAL(10,2)");
   await ensureColumn(dbName, "items", "image_url", "TEXT");
-  await ensureColumn(dbName, "inventory_events", "sku", "VARCHAR(64) NULL");
-  await ensureColumn(dbName, "inventory_events", "detail", "TEXT NULL");
-  await ensureColumn(dbName, "inventory_events", "delta", "INT NULL");
   await ensureDropColumn(dbName, "users", "role");
-}
-
-async function assertInventoryEventsColumns() {
-  const [rows] = await pool.query("SHOW COLUMNS FROM inventory_events");
-  const names = new Set(rows.map((r) => r.Field));
-  const missing = ["sku", "detail", "delta"].filter((c) => !names.has(c));
-  if (missing.length) {
-    throw new Error(
-      `inventory_events is missing columns: ${missing.join(
-        ", "
-      )}. Your DB schema did not migrate correctly.`
-    );
-  }
-  console.log("inventory_events columns OK");
+  await pool.query("DROP TABLE IF EXISTS inventory_events");
+  await dropUniqueIndexOnColumn(dbName, "items", "sku");
+  await ensureUniqueIndex(dbName, "items", "uniq_items_user_sku", "user_id, sku");
 }
 
 async function ensureStores() {
+  const owner = await getUserIdByEmail(users[0].email);
   for (const s of stores) {
     await pool.query(
-      "INSERT IGNORE INTO stores (name, location) VALUES (?, ?)",
-      [s.name, s.location]
+      "INSERT IGNORE INTO stores (user_id, name, location) VALUES (?, ?, ?)",
+      [owner, s.name, s.location]
     );
   }
 }
@@ -272,6 +304,13 @@ async function ensureUsers() {
   }
 }
 
+async function getUserIdByEmail(email) {
+  const [rows] = await pool.query("SELECT id FROM users WHERE email = ? LIMIT 1", [
+    email.toLowerCase(),
+  ]);
+  return rows[0]?.id || null;
+}
+
 async function getStoreIdByName(name) {
   const [rows] = await pool.query(
     "SELECT id FROM stores WHERE name = ? LIMIT 1",
@@ -281,13 +320,14 @@ async function getStoreIdByName(name) {
 }
 
 async function ensureItems() {
+  const owner = await getUserIdByEmail(users[0].email);
   for (const item of items) {
     const storeId = await getStoreIdByName(item.storeName);
 
     await pool.query(
       `
-      INSERT INTO items (sku, name, category, quantity, location, price, image_url, store_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO items (user_id, sku, name, category, quantity, location, price, image_url, store_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         name=VALUES(name),
         category=VALUES(category),
@@ -295,9 +335,11 @@ async function ensureItems() {
         location=VALUES(location),
         price=VALUES(price),
         image_url=VALUES(image_url),
-        store_id=VALUES(store_id)
+        store_id=VALUES(store_id),
+        user_id=VALUES(user_id)
     `,
       [
+        owner,
         item.sku,
         item.name,
         item.category,
@@ -317,11 +359,11 @@ async function ensureOrderSample() {
   );
   if (orderCountRows[0].cnt > 0) return;
 
+  const [userRows] = await pool.query("SELECT id FROM users LIMIT 1");
+  const userId = userRows[0]?.id || null;
   const [itemRows] = await pool.query(
-    "SELECT id, price, sku FROM items LIMIT 1"
-  );
-  const [userRows] = await pool.query(
-    "SELECT id FROM users LIMIT 1"
+    "SELECT id, price, sku FROM items WHERE user_id = ? LIMIT 1",
+    [userId]
   );
 
   if (!itemRows.length) return;
@@ -330,8 +372,6 @@ async function ensureOrderSample() {
   const priceEach = Number(itemRows[0].price || 0);
   const qty = 2;
   const total = priceEach * qty;
-  const userId = userRows[0]?.id || null;
-
   const [orderResult] = await pool.query(
     "INSERT INTO orders (user_id, total) VALUES (?, ?)",
     [userId, total]
@@ -347,10 +387,6 @@ async function ensureOrderSample() {
     [qty, itemId]
   );
 
-  await pool.query(
-    "INSERT INTO inventory_events (item_id, sku, action, detail, delta) VALUES (?, ?, ?, ?, ?)",
-    [itemId, itemRows[0].sku || null, "order", "Seed order", -qty]
-  );
 }
 
 // ===== Main =====
@@ -364,9 +400,6 @@ async function main() {
 
     await ensureTables(dbName);
     console.log("Schema ensured");
-
-    // Hard check to fail early with a clear message (instead of unknown column later)
-    await assertInventoryEventsColumns();
 
     await ensureStores();
     console.log("Stores ensured");

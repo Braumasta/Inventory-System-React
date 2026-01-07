@@ -24,22 +24,31 @@ const Dashboard = () => {
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("info");
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [s, dashboard] = await Promise.all([fetchStores(), fetchDashboard()]);
-        setStores(s || []);
-        setSummary({
-          totalItems: Number(dashboard?.totalItems || 0),
-          totalSalesLast24h: Number(dashboard?.totalSalesLast24h || 0),
-          recentSales: dashboard?.recentSales || [],
-        });
-      } catch (err) {
-        setStatus(err.message || "Failed to load dashboard data");
-        setStatusType("error");
+  const loadDashboard = async (showStatus = false) => {
+    try {
+      const [s, dashboard] = await Promise.all([fetchStores(), fetchDashboard()]);
+      setStores(s || []);
+      setSummary({
+        totalItems: Number(dashboard?.totalItems || 0),
+        totalSalesLast24h: Number(dashboard?.totalSalesLast24h || 0),
+        recentSales: dashboard?.recentSales || [],
+      });
+      if (showStatus) {
+        setStatus("Dashboard refreshed");
+        setStatusType("success");
       }
-    };
-    load();
+    } catch (err) {
+      setStatus(err.message || "Failed to load dashboard data");
+      setStatusType("error");
+    }
+  };
+
+  useEffect(() => {
+    loadDashboard();
+    const timer = setInterval(() => {
+      loadDashboard();
+    }, 30000);
+    return () => clearInterval(timer);
   }, []);
 
   const recentSales = useMemo(() => summary.recentSales || [], [summary]);
@@ -93,26 +102,31 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="admin-dashboard container">
-      <div className="admin-dashboard-header">
-        <div className="admin-header-copy">
-          <h1 className="admin-dashboard-title">Dashboard</h1>
-          <p className="admin-dashboard-subtitle">
+    <div className="dashboard container">
+      <div className="dashboard-header">
+        <div className="dashboard-header-copy">
+          <h1 className="dashboard-title">Dashboard</h1>
+          <p className="dashboard-subtitle">
             A quick pulse on inventory, sales activity, and store operations.
           </p>
         </div>
-        <div className="admin-dashboard-stats">
-          <div className="admin-stat-pill">
-            <span className="admin-stat-label">Stores</span>
-            <span className="admin-stat-value">{stores.length}</span>
+        <div className="dashboard-header-actions">
+          <button type="button" className="btn-ghost" onClick={() => loadDashboard(true)}>
+            Refresh
+          </button>
+        </div>
+        <div className="dashboard-stats">
+          <div className="dashboard-stat-pill">
+            <span className="dashboard-stat-label">Stores</span>
+            <span className="dashboard-stat-value">{stores.length}</span>
           </div>
-          <div className="admin-stat-pill">
-            <span className="admin-stat-label">Total items</span>
-            <span className="admin-stat-value">{summary.totalItems}</span>
+          <div className="dashboard-stat-pill">
+            <span className="dashboard-stat-label">Total items</span>
+            <span className="dashboard-stat-value">{summary.totalItems}</span>
           </div>
-          <div className="admin-stat-pill">
-            <span className="admin-stat-label">Sales (24h)</span>
-            <span className="admin-stat-value">
+          <div className="dashboard-stat-pill">
+            <span className="dashboard-stat-label">Sales (24h)</span>
+            <span className="dashboard-stat-value">
               ${Number(summary.totalSalesLast24h || 0).toFixed(2)}
             </span>
           </div>
@@ -121,11 +135,11 @@ const Dashboard = () => {
 
       {status && <div className={`alert ${statusType}`}>{status}</div>}
 
-      <div className="admin-grid">
-        <div className="admin-grid-main">
-          <section className="admin-card">
-            <div className="admin-card-header">
-              <h2 className="admin-card-title">Recent sales</h2>
+      <div className="dashboard-grid">
+        <div className="dashboard-grid-main">
+          <section className="dashboard-card">
+            <div className="dashboard-card-header">
+              <h2 className="dashboard-card-title">Recent sales</h2>
             </div>
             <div className="inventory-preview-wrapper">
               <table className="inventory-preview-table">
@@ -165,11 +179,11 @@ const Dashboard = () => {
             </div>
           </section>
 
-          <section className="admin-card">
-            <div className="admin-card-header">
-              <h2 className="admin-card-title">Stores</h2>
+          <section className="dashboard-card">
+            <div className="dashboard-card-header">
+              <h2 className="dashboard-card-title">Stores</h2>
             </div>
-            <form className="admin-access-form" onSubmit={handleAddStore}>
+            <form className="dashboard-access-form" onSubmit={handleAddStore}>
               <div className="form-row">
                 <input
                   className="form-input"
@@ -183,7 +197,7 @@ const Dashboard = () => {
                   value={newStoreLocation}
                   onChange={(e) => setNewStoreLocation(e.target.value)}
                 />
-                <button type="submit" className="btn-primary admin-access-submit">
+                <button type="submit" className="btn-primary dashboard-access-submit">
                   Add store
                 </button>
               </div>
@@ -219,7 +233,7 @@ const Dashboard = () => {
               ))}
             </div>
             {editStoreId && (
-              <form className="admin-access-form" onSubmit={handleSaveStore}>
+              <form className="dashboard-access-form" onSubmit={handleSaveStore}>
                 <div className="form-row">
                   <input
                     className="form-input"
@@ -233,7 +247,7 @@ const Dashboard = () => {
                     value={editStoreLocation}
                     onChange={(e) => setEditStoreLocation(e.target.value)}
                   />
-                  <button type="submit" className="btn-primary admin-access-submit">
+                  <button type="submit" className="btn-primary dashboard-access-submit">
                     Save
                   </button>
                 </div>
@@ -247,3 +261,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
