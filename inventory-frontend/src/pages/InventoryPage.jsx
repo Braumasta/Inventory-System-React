@@ -1,7 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/Inventory.css";
-import { fetchItems, createItem, updateItem, deleteItem, createOrder, fetchStores } from "../api";
+import {
+  fetchItems,
+  createItem,
+  updateItem,
+  deleteItem,
+  createOrder,
+  fetchStores,
+  createStore,
+} from "../api";
 
 const initialColumns = [
   "Image",
@@ -13,42 +21,7 @@ const initialColumns = [
   "Price",
 ];
 
-const initialRows = [
-  {
-    SKU: "SKU-001",
-    Name: "USB-C Cable",
-    Category: "Accessories",
-    Quantity: 120,
-    Location: "Aisle 1",
-    Price: 12.5,
-    Image:
-      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=320&q=60",
-  },
-  {
-    SKU: "SKU-002",
-    Name: "Wireless Mouse",
-    Category: "Peripherals",
-    Quantity: 45,
-    Location: "Aisle 2",
-    Price: 29.9,
-    Image:
-      "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?auto=format&fit=crop&w=320&q=60",
-  },
-  {
-    SKU: "SKU-003",
-    Name: "Laptop Stand",
-    Category: "Accessories",
-    Quantity: 30,
-    Location: "Aisle 3",
-    Price: 54.0,
-    Image:
-      "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=320&q=60",
-  },
-];
-
 const taxRate = 0.08;
-const STORE_LIST_KEY = "inventory-store-list";
-const SELECTED_STORE_KEY = "inventory-selected-store";
 
 const mapApiItemToRow = (item) => ({
   Id: item.id,
@@ -73,48 +46,16 @@ const mapRowToApiPayload = (row, fallbackStoreId = null) => ({
   storeId: row.StoreId || fallbackStoreId || null,
 });
 
-const makeDefaultStore = (id, name) => ({
-  id,
-  name,
-  columns: initialColumns,
-  columnNotes: {},
-  rows: initialRows,
-  logEntries: [],
-  historyEntries: [],
-});
-
-const loadStoreData = (storeId) => {
-  try {
-    const raw = localStorage.getItem(`inventory-store-${storeId}`);
-    if (raw) return JSON.parse(raw);
-  } catch (err) {
-    // ignore
-  }
-  return null;
-};
-
-const saveStoreData = (storeId, data) => {
-  try {
-    localStorage.setItem(`inventory-store-${storeId}`, JSON.stringify(data));
-  } catch (err) {
-    // ignore
-  }
-};
-
 const InventoryPage = ({ user }) => {
   const displayName = user?.name || "User";
-  const storeListKey = user?.id ? `${STORE_LIST_KEY}-${user.id}` : STORE_LIST_KEY;
-  const selectedStoreKey = user?.id ? `${SELECTED_STORE_KEY}-${user.id}` : SELECTED_STORE_KEY;
   const canEditAll = true;
 
-  const [storeList, setStoreList] = useState([]);
-  const [currentStoreId, setCurrentStoreId] = useState("");
   const [stores, setStores] = useState([]);
   const [selectedStoreId, setSelectedStoreId] = useState(null);
 
   const [columns, setColumns] = useState(initialColumns);
   const [columnNotes, setColumnNotes] = useState({});
-  const [rows, setRows] = useState(initialRows);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [newColumnName, setNewColumnName] = useState("");
@@ -195,39 +136,6 @@ const InventoryPage = ({ user }) => {
   };
 
   useEffect(() => {
-    // Load stores list and selected store
-    let list = [];
-    try {
-      const rawList = localStorage.getItem(storeListKey);
-      if (rawList) list = JSON.parse(rawList);
-    } catch (err) {
-      list = [];
-    }
-
-    if (!list.length) {
-      const defaultId = `store-${Date.now()}`;
-      const defaultStore = makeDefaultStore(defaultId, "Main store");
-      list = [{ id: defaultId, name: "Main store" }];
-      saveStoreData(defaultId, defaultStore);
-      localStorage.setItem(storeListKey, JSON.stringify(list));
-      localStorage.setItem(selectedStoreKey, defaultId);
-    }
-
-    const storedSelected =
-      localStorage.getItem(selectedStoreKey) || list[0].id;
-
-    setStoreList(list);
-    setCurrentStoreId(storedSelected);
-
-    // Load selected store data
-    const storeData = loadStoreData(storedSelected) || makeDefaultStore(storedSelected, "Main store");
-    setColumns(storeData.columns || initialColumns);
-    setColumnNotes(storeData.columnNotes || {});
-    setRows(storeData.rows || initialRows);
-    setLogEntries(storeData.logEntries || []);
-    setHistoryEntries(storeData.historyEntries || []);
-
-    // Fetch from API
     refreshItems();
     fetchStores()
       .then((data) => {
@@ -237,13 +145,11 @@ const InventoryPage = ({ user }) => {
       .catch(() => {
         // ignore
       });
-  }, [storeListKey, selectedStoreKey]);
-
-  useEffect(() => {
-    if (storeList.length) {
-      localStorage.setItem(storeListKey, JSON.stringify(storeList));
-    }
-  }, [storeList, storeListKey]);
+    setColumns(initialColumns);
+    setColumnNotes({});
+    setLogEntries([]);
+    setHistoryEntries([]);
+  }, []);
 
   const addHistoryEntry = (action, payload = {}) => {
     const entry = {
@@ -489,30 +395,22 @@ const InventoryPage = ({ user }) => {
   };
 
   const handleStoreChange = (id) => {
-    setCurrentStoreId(id);
-    localStorage.setItem(selectedStoreKey, id);
-    const data = loadStoreData(id) || makeDefaultStore(id, "New store");
-    setColumns(data.columns || initialColumns);
-    setColumnNotes(data.columnNotes || {});
-    setRows(data.rows || initialRows);
-    setLogEntries(data.logEntries || []);
-    setHistoryEntries(data.historyEntries || []);
-    setDirty(false);
+    setSelectedStoreId(Number(id) || null);
   };
 
-  const handleAddStore = (e) => {
+  const handleAddStore = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const name = (formData.get("store-name") || "").toString().trim();
     if (!name) return;
-    const id = `store-${Date.now()}`;
-    const updatedList = [...storeList, { id, name }];
-    setStoreList(updatedList);
-    localStorage.setItem(storeListKey, JSON.stringify(updatedList));
-    const newData = makeDefaultStore(id, name);
-    saveStoreData(id, newData);
-    handleStoreChange(id);
-    e.target.reset();
+    try {
+      const created = await createStore({ name, location: "" });
+      setStores((prev) => [created, ...prev]);
+      setSelectedStoreId(created.id);
+      e.target.reset();
+    } catch (err) {
+      window.alert(err.message || "Could not add store");
+    }
   };
 
   return (
@@ -535,10 +433,11 @@ const InventoryPage = ({ user }) => {
               <select
                 id="store-select"
                 className="form-input"
-                value={currentStoreId}
+                value={selectedStoreId || ""}
                 onChange={(e) => handleStoreChange(e.target.value)}
               >
-                {storeList.map((store) => (
+                <option value="">All stores</option>
+                {stores.map((store) => (
                   <option key={store.id} value={store.id}>
                     {store.name}
                   </option>

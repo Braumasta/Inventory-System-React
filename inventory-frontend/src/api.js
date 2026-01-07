@@ -1,13 +1,15 @@
 const API_BASE = process.env.REACT_APP_API_URL || "";
-const TOKEN_KEY = "authToken";
+let authToken = "";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
-export const getToken = () => localStorage.getItem(TOKEN_KEY) || "";
+export const getToken = () => authToken;
 export const setToken = (token) => {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
+  authToken = token || "";
 };
-export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+export const clearToken = () => {
+  authToken = "";
+};
 
 const authHeaders = () => {
   const token = getToken();

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "../styles/AccountSecurity.css";
-import { changePassword, deleteAccount } from "../api";
+import { changePassword, clearToken, deleteAccount } from "../api";
 
 const AccountSecurity = () => {
   const [status, setStatus] = useState("");
@@ -47,8 +47,7 @@ const AccountSecurity = () => {
     }
     try {
       await deleteAccount();
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("authUser");
+      clearToken();
       setStatusMessage("Account deleted. You can now sign up again.", "success");
       setDeleteConfirm("");
       window.location.href = "/auth";
