@@ -15,17 +15,16 @@ import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import AuthPage from "./pages/AuthPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import AdminDashboard from "./pages/AdminDashboard";
+import Dashboard from "./pages/Dashboard";
 import InventoryPage from "./pages/InventoryPage";
 import AccountDetails from "./pages/AccountDetails";
 import AccountSecurity from "./pages/AccountSecurity";
 import PurchaseHistory from "./pages/PurchaseHistory";
 import InventoryHistory from "./pages/InventoryHistory";
 
-function ProtectedRoute({ user, requiredRole, loading, children }) {
+function ProtectedRoute({ user, loading, children }) {
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
-  if (requiredRole && user.role !== requiredRole) return <Navigate to="/" replace />;
   return children;
 }
 function App() {
@@ -131,17 +130,18 @@ function App() {
             }
           />
 
-          {/* Admin dashboard: temporarily open to any signed-in user for showcase */}
+          {/* Dashboard: open to any signed-in user */}
           <Route
-            path="/admin"
+            path="/dashboard"
             element={
               <ProtectedRoute user={user} loading={authLoading}>
-                <AdminDashboard user={user} />
+                <Dashboard user={user} />
               </ProtectedRoute>
             }
           />
+          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
 
-          {/* Inventory: accessible for both roles, with role-based behavior */}
+          {/* Inventory */}
           <Route
             path="/inventory"
             element={

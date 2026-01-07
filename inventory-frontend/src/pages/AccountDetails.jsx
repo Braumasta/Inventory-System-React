@@ -71,7 +71,6 @@ const AccountDetails = ({ user, onUpdateUser }) => {
     }
   };
 
-  const roleLabel = user?.role === "admin" ? "Admin" : "Employee";
   const initials =
     user?.name
       ?.split(" ")
@@ -87,7 +86,7 @@ const AccountDetails = ({ user, onUpdateUser }) => {
           <h1 className="account-title">Account details</h1>
           <p className="account-subtitle">
             Update your profile photo, personal information, and date of birth. Your
-            unique ID stays visible for admin tasks.
+            unique ID stays visible for support and audits.
           </p>
         </div>
       </header>
@@ -116,10 +115,6 @@ const AccountDetails = ({ user, onUpdateUser }) => {
             <div>
               <div className="account-meta-label">Email</div>
               <div className="account-meta-value">{user?.email}</div>
-            </div>
-            <div>
-              <div className="account-meta-label">Role</div>
-              <div className="account-role-pill">{roleLabel}</div>
             </div>
           </div>
         </section>

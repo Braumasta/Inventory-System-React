@@ -113,15 +113,8 @@ export const deleteStore = (id) =>
     headers: authHeaders(),
   }).then(handleResponse);
 
-export const fetchUsers = () =>
-  fetch(`${API_BASE}/users`, { headers: authHeaders() }).then(handleResponse);
-
-export const updateUserRole = (id, role) =>
-  fetch(`${API_BASE}/users/${id}`, {
-    method: "PUT",
-    headers: { ...jsonHeaders, ...authHeaders() },
-    body: JSON.stringify({ role }),
-  }).then(handleResponse);
-
 export const fetchInventoryEvents = () =>
   fetch(`${API_BASE}/inventory-events`, { headers: authHeaders() }).then(handleResponse);
+
+export const fetchDashboard = () =>
+  fetch(`${API_BASE}/dashboard`, { headers: authHeaders() }).then(handleResponse);
