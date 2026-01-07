@@ -102,9 +102,8 @@ const saveStoreData = (storeId, data) => {
 };
 
 const InventoryPage = ({ user }) => {
-  // TEMP: allow employees to act as admin for testing; revert when RBAC is restored.
-  const isAdmin = user?.role === "admin" || user?.role === "employee";
   const displayName = user?.name || "User";
+  const canEditAll = true;
 
   const [storeList, setStoreList] = useState([]);
   const [currentStoreId, setCurrentStoreId] = useState("");
@@ -519,17 +518,14 @@ const InventoryPage = ({ user }) => {
       <header className="inventory-header">
         <div>
           <p className="inventory-kicker">
-            {isAdmin ? "Admin workspace" : "Employee workspace"}
+            Inventory workspace
           </p>
           <h1 className="inventory-title">Inventory</h1>
           <p className="inventory-subtitle">
-            Welcome, <strong>{displayName}</strong>. You are signed in as{" "}
-            <strong>{isAdmin ? "Admin" : "Employee"}</strong>.
+            Welcome, <strong>{displayName}</strong>. Manage items, pricing, and stock in one view.
           </p>
           <p className="inventory-subtitle">
-            {isAdmin
-              ? "Adjust structure, add context columns, and filter through stock."
-              : "Scan or enter barcodes, update quantities, and review cart before confirming purchases."}
+            Adjust structure, add context columns, and review the cart before confirming purchases.
           </p>
           <div className="store-row">
             <div className="store-select">
@@ -547,24 +543,22 @@ const InventoryPage = ({ user }) => {
                 ))}
               </select>
             </div>
-            {isAdmin && (
-              <form className="store-add-form" onSubmit={handleAddStore}>
-                <label className="form-label" htmlFor="store-name">
-                  Add store
-                </label>
-                <div className="store-add-row">
-                  <input
-                    id="store-name"
-                    name="store-name"
-                    className="form-input"
-                    placeholder="e.g. Uptown Branch"
-                  />
-                  <button type="submit" className="btn-primary">
-                    Create
-                  </button>
-                </div>
-              </form>
-            )}
+            <form className="store-add-form" onSubmit={handleAddStore}>
+              <label className="form-label" htmlFor="store-name">
+                Add store
+              </label>
+              <div className="store-add-row">
+                <input
+                  id="store-name"
+                  name="store-name"
+                  className="form-input"
+                  placeholder="e.g. Uptown Branch"
+                />
+                <button type="submit" className="btn-primary">
+                  Create
+                </button>
+              </div>
+            </form>
           </div>
         </div>
         <div className="inventory-header-actions">
@@ -696,44 +690,42 @@ const InventoryPage = ({ user }) => {
               </span>
             </div>
           )}
-          {isAdmin && (
-            <form className="inventory-add-column" onSubmit={handleAddColumn}>
-              <div className="inventory-add-column-row">
-                <div className="inventory-add-column-field">
-                  <label className="form-label" htmlFor="new-column-name">
-                    Add column
-                  </label>
-                  <input
-                    id="new-column-name"
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Supplier, Batch, Expiry date"
-                    value={newColumnName}
-                    onChange={(e) => setNewColumnName(e.target.value)}
-                  />
-                </div>
-                <div className="inventory-add-column-field">
-                  <label className="form-label" htmlFor="new-column-note">
-                    Context (optional)
-                  </label>
-                  <input
-                    id="new-column-note"
-                    type="text"
-                    className="form-input"
-                    placeholder="How this column should be used"
-                    value={newColumnNote}
-                    onChange={(e) => setNewColumnNote(e.target.value)}
-                  />
-                </div>
-                <button type="submit" className="btn-primary">
-                  Add
-                </button>
+          <form className="inventory-add-column" onSubmit={handleAddColumn}>
+            <div className="inventory-add-column-row">
+              <div className="inventory-add-column-field">
+                <label className="form-label" htmlFor="new-column-name">
+                  Add column
+                </label>
+                <input
+                  id="new-column-name"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Supplier, Batch, Expiry date"
+                  value={newColumnName}
+                  onChange={(e) => setNewColumnName(e.target.value)}
+                />
               </div>
-              <p className="inventory-note">
-                Stored in the UI only for now; persist to your backend later.
-              </p>
-            </form>
-          )}
+              <div className="inventory-add-column-field">
+                <label className="form-label" htmlFor="new-column-note">
+                  Context (optional)
+                </label>
+                <input
+                  id="new-column-note"
+                  type="text"
+                  className="form-input"
+                  placeholder="How this column should be used"
+                  value={newColumnNote}
+                  onChange={(e) => setNewColumnNote(e.target.value)}
+                />
+              </div>
+              <button type="submit" className="btn-primary">
+                Add
+              </button>
+            </div>
+            <p className="inventory-note">
+              Stored in the UI only for now; persist to your backend later.
+            </p>
+          </form>
         </div>
 
         <div className="inventory-grid single-column">
@@ -742,8 +734,7 @@ const InventoryPage = ({ user }) => {
             <div>
               <h3>Inventory table</h3>
               <p className="inventory-card-subtitle">
-                  Edit quantities inline. Admins can edit all fields; employees are
-                  limited to quantities.
+                  Edit quantities and details inline. Updates save back to the database.
               </p>
             </div>
           </div>
@@ -761,7 +752,7 @@ const InventoryPage = ({ user }) => {
                         </div>
                       </th>
                     ))}
-                    {isAdmin && <th className="actions-header">Actions</th>}
+                    <th className="actions-header">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -812,7 +803,7 @@ const InventoryPage = ({ user }) => {
                           );
                         }
 
-                        if (isQuantity || isPrice || isAdmin) {
+                        if (isQuantity || isPrice || canEditAll) {
                           return (
                             <td key={col} data-label={col}>
                               <input
@@ -835,33 +826,29 @@ const InventoryPage = ({ user }) => {
                           </td>
                         );
                       })}
-                      {isAdmin && (
-                        <td className="actions-cell" data-label="Actions">
-                          <button
-                            type="button"
-                            className="inline-remove"
-                            onClick={() => setShowDeleteModal({ Id: row.Id, SKU: row.SKU })}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      )}
+                      <td className="actions-cell" data-label="Actions">
+                        <button
+                          type="button"
+                          className="inline-remove"
+                          onClick={() => setShowDeleteModal({ Id: row.Id, SKU: row.SKU })}
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            {isAdmin && (
-              <div className="inventory-actions-row save-row">
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => setShowSaveModal(true)}
-                >
-                  Save changes
-                </button>
-              </div>
-            )}
+            <div className="inventory-actions-row save-row">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => setShowSaveModal(true)}
+              >
+                Save changes
+              </button>
+            </div>
           </section>
         </div>
 
@@ -922,8 +909,8 @@ const InventoryPage = ({ user }) => {
                 </button>
               </div>
               <p className="inventory-note">
-                Employees: use manual entry if a barcode reader isn&apos;t available.
-                Admins: use this to simulate pick/pack flows.
+                Use manual entry if a barcode reader isn&apos;t available, or to
+                simulate pick/pack flows.
               </p>
             </div>
           </section>
@@ -1055,84 +1042,82 @@ const InventoryPage = ({ user }) => {
           </section>
         </div>
 
-        {isAdmin && (
-          <section className="inventory-card glass-card add-product-card">
-            <div className="inventory-card-header">
-              <div>
-                <h3>Add product</h3>
-                <p className="inventory-card-subtitle">
-                  Add a SKU to start tracking it. Fill remaining fields and images later.
-                </p>
-              </div>
+        <section className="inventory-card glass-card add-product-card">
+          <div className="inventory-card-header">
+            <div>
+              <h3>Add product</h3>
+              <p className="inventory-card-subtitle">
+                Add a SKU to start tracking it. Fill remaining fields and images later.
+              </p>
             </div>
-            <form className="inventory-add-product" onSubmit={handleAddProduct}>
-              <div className="product-grid">
-                <input
-                  className="form-input"
-                  placeholder="SKU (e.g. SKU-010)"
-                  value={newProductSku}
-                  onChange={(e) => setNewProductSku(e.target.value)}
-                />
-                <input
-                  className="form-input"
-                  placeholder="Name"
-                  value={newProductName}
-                  onChange={(e) => setNewProductName(e.target.value)}
-                />
-                <input
-                  className="form-input"
-                  placeholder="Category"
-                  value={newProductCategory}
-                  onChange={(e) => setNewProductCategory(e.target.value)}
-                />
-                <input
-                  className="form-input"
-                  placeholder="Location"
-                  value={newProductLocation}
-                  onChange={(e) => setNewProductLocation(e.target.value)}
-                />
-                <input
-                  className="form-input"
-                  type="number"
-                  placeholder="Quantity"
-                  value={newProductQuantity}
-                  onChange={(e) => setNewProductQuantity(e.target.value)}
-                  min="0"
-                />
-                <input
-                  className="form-input"
-                  type="number"
-                  step="0.01"
-                  placeholder="Price"
-                  value={newProductPrice}
-                  onChange={(e) => setNewProductPrice(e.target.value)}
-                  min="0"
-                />
-                <input
-                  className="form-input"
-                  placeholder="Image URL (optional)"
-                  value={newProductImage}
-                  onChange={(e) => setNewProductImage(e.target.value)}
-                />
-                <select
-                  className="form-input"
-                  value={selectedStoreId || ""}
-                  onChange={(e) => setSelectedStoreId(Number(e.target.value) || null)}
-                >
-                  <option value="">No store</option>
-                  {stores.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button className="btn-primary" type="submit">
-                Add product
-              </button>
-            </form>
-          </section>
-        )}
+          </div>
+          <form className="inventory-add-product" onSubmit={handleAddProduct}>
+            <div className="product-grid">
+              <input
+                className="form-input"
+                placeholder="SKU (e.g. SKU-010)"
+                value={newProductSku}
+                onChange={(e) => setNewProductSku(e.target.value)}
+              />
+              <input
+                className="form-input"
+                placeholder="Name"
+                value={newProductName}
+                onChange={(e) => setNewProductName(e.target.value)}
+              />
+              <input
+                className="form-input"
+                placeholder="Category"
+                value={newProductCategory}
+                onChange={(e) => setNewProductCategory(e.target.value)}
+              />
+              <input
+                className="form-input"
+                placeholder="Location"
+                value={newProductLocation}
+                onChange={(e) => setNewProductLocation(e.target.value)}
+              />
+              <input
+                className="form-input"
+                type="number"
+                placeholder="Quantity"
+                value={newProductQuantity}
+                onChange={(e) => setNewProductQuantity(e.target.value)}
+                min="0"
+              />
+              <input
+                className="form-input"
+                type="number"
+                step="0.01"
+                placeholder="Price"
+                value={newProductPrice}
+                onChange={(e) => setNewProductPrice(e.target.value)}
+                min="0"
+              />
+              <input
+                className="form-input"
+                placeholder="Image URL (optional)"
+                value={newProductImage}
+                onChange={(e) => setNewProductImage(e.target.value)}
+              />
+              <select
+                className="form-input"
+                value={selectedStoreId || ""}
+                onChange={(e) => setSelectedStoreId(Number(e.target.value) || null)}
+              >
+                <option value="">No store</option>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="btn-primary" type="submit">
+              Add product
+            </button>
+          </form>
+        </section>
 
         {showDeleteModal && (
           <div className="modal-overlay">

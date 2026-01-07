@@ -10,14 +10,12 @@ const users = [
     password: process.env.POPULATE_ADMIN_PASSWORD || "ChangeMe123!",
     firstName: "Admin",
     lastName: "User",
-    role: "admin",
   },
   {
     email: "employee@example.com",
     password: process.env.POPULATE_EMP_PASSWORD || "ChangeMe123!",
     firstName: "Employee",
     lastName: "User",
-    role: "employee",
   },
 ];
 
@@ -110,6 +108,32 @@ async function ensureColumn(dbName, table, column, definition) {
   }
 }
 
+async function ensureDropColumn(dbName, table, column) {
+  if (!dbName) {
+    throw new Error(
+      "Could not detect database name. Set MYSQLDATABASE (or DB_NAME) in Railway Variables."
+    );
+  }
+
+  const [cols] = await pool.query(
+    `
+    SELECT COLUMN_NAME
+    FROM information_schema.columns
+    WHERE table_schema = ?
+      AND table_name = ?
+      AND column_name = ?
+  `,
+    [dbName, table, column]
+  );
+
+  if (cols.length) {
+    await pool.query(
+      `ALTER TABLE \`${table}\` DROP COLUMN \`${column}\``
+    );
+    console.log(`Dropped column: ${table}.${column}`);
+  }
+}
+
 async function ensureTables(dbName) {
   // ---- users
   await pool.query(`
@@ -121,7 +145,6 @@ async function ensureTables(dbName) {
       middle_name VARCHAR(100),
       last_name VARCHAR(100),
       dob DATE,
-      role VARCHAR(50) DEFAULT 'employee',
       avatar_url TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -204,6 +227,7 @@ async function ensureTables(dbName) {
   await ensureColumn(dbName, "inventory_events", "sku", "VARCHAR(64) NULL");
   await ensureColumn(dbName, "inventory_events", "detail", "TEXT NULL");
   await ensureColumn(dbName, "inventory_events", "delta", "INT NULL");
+  await ensureDropColumn(dbName, "users", "role");
 }
 
 async function assertInventoryEventsColumns() {
@@ -240,10 +264,10 @@ async function ensureUsers() {
     const hash = await bcrypt.hash(u.password, 10);
     await pool.query(
       `
-      INSERT INTO users (email, password_hash, first_name, last_name, role)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO users (email, password_hash, first_name, last_name)
+      VALUES (?, ?, ?, ?)
     `,
-      [email, hash, u.firstName, u.lastName, u.role]
+      [email, hash, u.firstName, u.lastName]
     );
   }
 }
@@ -297,7 +321,7 @@ async function ensureOrderSample() {
     "SELECT id, price, sku FROM items LIMIT 1"
   );
   const [userRows] = await pool.query(
-    "SELECT id FROM users WHERE role='employee' LIMIT 1"
+    "SELECT id FROM users LIMIT 1"
   );
 
   if (!itemRows.length) return;

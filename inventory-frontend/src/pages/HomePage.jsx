@@ -10,7 +10,7 @@ const HomePage = () => {
         <div className="hero-grid">
           <div>
             <div className="hero-kicker">
-              Real-time inventory · Multi-device · Role-based access
+              Real-time inventory - Multi-device - Shared workspace
             </div>
 
             <h1 className="hero-title">
@@ -19,9 +19,8 @@ const HomePage = () => {
             </h1>
 
             <p className="hero-subtitle">
-              InventorySphere gives admins full control over structure and access,
-              while employees get a clean, focused view for checking stock,
-              scanning barcodes, and updating quantities from any device.
+              InventorySphere keeps structure, stock checks, barcode scans, and
+              daily updates in one clean workspace that works on any device.
             </p>
 
             <div className="hero-actions">
@@ -38,7 +37,7 @@ const HomePage = () => {
                 <strong>Multi-tenant</strong> · each org has isolated data
               </span>
               <span>
-                <strong>Admin / Employee</strong> role hierarchy
+                <strong>Unified access</strong> for core inventory tasks
               </span>
               <span>
                 <strong>Responsive UI</strong> · phones, tablets, desktops
@@ -70,7 +69,7 @@ const HomePage = () => {
 
             <p className="hero-subtitle" style={{ marginBottom: 0 }}>
               Designed for barcode workflows, stock audits, and quick lookups —
-              without exposing admin-only settings to employees.
+              without extra setup or heavy training.
             </p>
           </div>
         </div>
@@ -83,22 +82,21 @@ const HomePage = () => {
             Built for organizations, not just single users
           </h2>
           <p className="section-subtitle">
-            Admins define how inventory looks. Employees only see what they need
-            to keep stock moving.
+            Keep inventory structured and easy to update for everyone on the team.
           </p>
         </div>
 
         <div className="hero-grid">
           <div className="card">
-            <h3 style={{ marginTop: 0 }}>Admin experience</h3>
+            <h3 style={{ marginTop: 0 }}>Operations setup</h3>
             <p
               style={{
                 color: "var(--text-muted)",
                 fontSize: "0.9rem",
               }}
             >
-              Configure custom columns, categories, and locations. Onboard
-              employees securely and assign roles per organization.
+              Configure columns, categories, and locations. Keep the catalog
+              organized and ready for day-to-day updates.
             </p>
             <ul
               style={{
@@ -107,13 +105,13 @@ const HomePage = () => {
               }}
             >
               <li>CRUD operations over products and structure</li>
-              <li>Invite employees with role-based permissions</li>
+              <li>Keep structure consistent across stores and locations</li>
               <li>Track newly added products in the last 7 days</li>
             </ul>
           </div>
 
           <div className="card">
-            <h3 style={{ marginTop: 0 }}>Employee experience</h3>
+            <h3 style={{ marginTop: 0 }}>Daily flow</h3>
             <p
               style={{
                 color: "var(--text-muted)",
@@ -142,15 +140,15 @@ const HomePage = () => {
         <div className="section-header">
           <h2 className="section-title">What teams say</h2>
           <p className="section-subtitle">
-            Example testimonials to show how different roles benefit from the system.
+            Example testimonials to show how teams benefit from the system.
           </p>
         </div>
 
         <div className="testimonials-grid">
           <div className="testimonial-card">
             <p className="testimonial-quote">
-              “Our admins love how they can change the inventory columns without
-              touching code, and the changes appear instantly for all employees.”
+              "We love how we can change the inventory columns without touching
+              code, and the updates appear instantly for everyone."
             </p>
             <div className="testimonial-meta">
               <strong>Leila • Operations Manager</strong>
@@ -189,3 +187,9 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
+
+
+
+
+

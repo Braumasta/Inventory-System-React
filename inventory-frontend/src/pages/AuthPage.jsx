@@ -27,12 +27,6 @@ const AuthPage = ({ onSignIn }) => {
     setError("");
   };
 
-  // TEMP: purely frontend - backend will decide real role later
-  const inferRoleFromEmail = (email) => {
-    if (!email) return "employee";
-    return email.toLowerCase().includes("admin") ? "admin" : "employee";
-  };
-
   const handleSignInSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -76,15 +70,12 @@ const AuthPage = ({ onSignIn }) => {
       return;
     }
 
-    const role = inferRoleFromEmail(signUpEmail);
-
     try {
       const resp = await register({
         firstName,
         lastName,
         email: signUpEmail,
         password: signUpPassword,
-        role,
       });
       if (typeof onSignIn === "function") {
         onSignIn({ user: resp.user, token: resp.token });
@@ -109,9 +100,9 @@ const AuthPage = ({ onSignIn }) => {
           </h1>
 
           <p className="auth-main-text">
-            Admins can define locations, categories, and employee access. Staff
-            members focus on real-time stock updates using barcode scanning and
-            simple quantity controls.
+            Teams can define locations and categories while keeping everyone in
+            sync on real-time stock updates using barcode scanning and quick
+            quantity controls.
           </p>
 
           <div className="auth-meta">
@@ -122,14 +113,14 @@ const AuthPage = ({ onSignIn }) => {
               </div>
             </div>
             <div>
-              <div className="auth-meta-label">Role-based access</div>
+              <div className="auth-meta-label">Shared access</div>
               <div className="auth-meta-value">
-                Admins manage structure, employees update quantities.
+                Keep inventory structure and daily updates in one workspace.
               </div>
             </div>
             <div className="auth-meta-note">
-              Reset passwords, invite employees, and manage data from a single
-              admin dashboard (to be wired to the backend next).
+              Reset passwords, invite teammates, and manage data from a single
+              dashboard.
             </div>
           </div>
         </section>
@@ -336,9 +327,8 @@ const AuthPage = ({ onSignIn }) => {
               </button>
 
               <p className="auth-small-note">
-                Once your account is verified, admin users will be able to add
-                employees securely from the dashboard using invitations and
-                role-based permissions.
+                Once your account is verified, you can invite teammates and
+                manage access from the dashboard.
               </p>
             </form>
           )}

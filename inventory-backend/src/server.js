@@ -36,6 +36,15 @@ const ensureSchema = async () => {
       await pool.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
     }
   };
+  const ensureDropColumn = async (table, column) => {
+    const [cols] = await pool.query(
+      "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?",
+      [table, column]
+    );
+    if (cols.length) {
+      await pool.query(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+    }
+  };
 
   // Users
   await pool.query(`
@@ -47,7 +56,6 @@ const ensureSchema = async () => {
       middle_name VARCHAR(100),
       last_name VARCHAR(100),
       dob DATE,
-      role VARCHAR(50) DEFAULT 'employee',
       avatar_url TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -122,10 +130,11 @@ const ensureSchema = async () => {
   await ensureColumn("users", "middle_name", "VARCHAR(100)");
   await ensureColumn("users", "dob", "DATE");
   await ensureColumn("users", "avatar_url", "TEXT");
+  await ensureDropColumn("users", "role");
 };
 
 const signToken = (user) =>
-  jwt.sign({ sub: user.id, role: user.role, email: user.email }, JWT_SECRET, {
+  jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, {
     expiresIn: "7d",
   });
 
@@ -142,11 +151,6 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-const requireAdmin = (req, res, next) => {
-  if (req.user?.role !== "admin") return res.status(403).json({ error: "Forbidden" });
-  next();
-};
-
 // Health check
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -154,14 +158,14 @@ app.get("/health", (_req, res) => {
 
 // Auth
 app.post("/auth/register", async (req, res) => {
-  const { email, password, firstName, middleName, lastName, dob, role, avatarUrl } = req.body || {};
+  const { email, password, firstName, middleName, lastName, dob, avatarUrl } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" });
   }
   try {
     const hash = await bcrypt.hash(password, 10);
     const [result] = await pool.query(
-      "INSERT INTO users (email, password_hash, first_name, middle_name, last_name, dob, role, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO users (email, password_hash, first_name, middle_name, last_name, dob, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         email.toLowerCase(),
         hash,
@@ -169,7 +173,6 @@ app.post("/auth/register", async (req, res) => {
         middleName || "",
         lastName || "",
         dob || null,
-        role || "employee",
         avatarUrl || null,
       ]
     );
@@ -180,7 +183,6 @@ app.post("/auth/register", async (req, res) => {
       middleName: middleName || "",
       lastName: lastName || "",
       dob: dob || null,
-      role: role || "employee",
       avatarUrl: avatarUrl || null,
     };
     const token = signToken(user);
@@ -201,7 +203,7 @@ app.post("/auth/login", async (req, res) => {
   }
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, password_hash, first_name, middle_name, last_name, dob, role, avatar_url FROM users WHERE email = ?",
+      "SELECT id, email, password_hash, first_name, middle_name, last_name, dob, avatar_url FROM users WHERE email = ?",
       [email.toLowerCase()]
     );
     if (!rows.length) return res.status(401).json({ error: "Invalid credentials" });
@@ -217,7 +219,6 @@ app.post("/auth/login", async (req, res) => {
         middleName: user.middle_name,
         lastName: user.last_name,
         dob: user.dob,
-        role: user.role,
         avatarUrl: user.avatar_url,
       },
       token,
@@ -232,7 +233,7 @@ app.post("/auth/login", async (req, res) => {
 app.get("/me", authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, first_name AS firstName, middle_name AS middleName, last_name AS lastName, dob, role, avatar_url AS avatarUrl FROM users WHERE id = ?",
+      "SELECT id, email, first_name AS firstName, middle_name AS middleName, last_name AS lastName, dob, avatar_url AS avatarUrl FROM users WHERE id = ?",
       [req.user?.sub]
     );
     if (!rows.length) return res.status(404).json({ error: "User not found" });
@@ -473,11 +474,10 @@ app.post("/orders", authMiddleware, async (req, res) => {
   }
 });
 
-// Get orders (current user; admins see all)
+// Get orders (current user)
 app.get("/orders", authMiddleware, async (req, res) => {
-  const isAdmin = req.user?.role === "admin";
-  const whereClause = isAdmin ? "" : "WHERE o.user_id = ?";
-  const params = isAdmin ? [] : [req.user?.sub || 0];
+  const whereClause = "WHERE o.user_id = ?";
+  const params = [req.user?.sub || 0];
   try {
     const [rows] = await pool.query(
       `
@@ -543,7 +543,7 @@ app.get("/stores", authMiddleware, async (_req, res) => {
   }
 });
 
-app.post("/stores", authMiddleware, requireAdmin, async (req, res) => {
+app.post("/stores", authMiddleware, async (req, res) => {
   const name = (req.body?.name || "").toString().trim();
   const location = (req.body?.location || "").toString().trim();
   if (!name) return res.status(400).json({ error: "Name required" });
@@ -563,7 +563,7 @@ app.post("/stores", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
-app.put("/stores/:id", authMiddleware, requireAdmin, async (req, res) => {
+app.put("/stores/:id", authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
   const name = (req.body?.name || "").toString().trim();
   const location = (req.body?.location || "").toString().trim();
@@ -585,7 +585,7 @@ app.put("/stores/:id", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
-app.delete("/stores/:id", authMiddleware, requireAdmin, async (req, res) => {
+app.delete("/stores/:id", authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
   try {
     const [result] = await pool.query("DELETE FROM stores WHERE id = ?", [id]);
@@ -597,35 +597,8 @@ app.delete("/stores/:id", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
-// Users list (admin)
-app.get("/users", authMiddleware, requireAdmin, async (_req, res) => {
-  try {
-    const [rows] = await pool.query(
-      "SELECT id, email, first_name AS firstName, last_name AS lastName, role, created_at AS createdAt FROM users ORDER BY id DESC"
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error("Fetch users failed:", err.message);
-    res.status(500).json({ error: "Could not fetch users" });
-  }
-});
-
-app.put("/users/:id", authMiddleware, requireAdmin, async (req, res) => {
-  const id = Number(req.params.id);
-  const role = (req.body?.role || "").toString().trim();
-  if (!role) return res.status(400).json({ error: "Role required" });
-  try {
-    const [result] = await pool.query("UPDATE users SET role = ? WHERE id = ?", [role, id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: "User not found" });
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Update user failed:", err.message);
-    res.status(500).json({ error: "Could not update user" });
-  }
-});
-
-// Inventory events (admin)
-app.get("/inventory-events", authMiddleware, requireAdmin, async (_req, res) => {
+// Inventory events
+app.get("/inventory-events", authMiddleware, async (_req, res) => {
   try {
     const [rows] = await pool.query(
       "SELECT id, item_id AS itemId, sku, action, detail, delta, created_at AS createdAt FROM inventory_events ORDER BY id DESC LIMIT 500"
@@ -634,6 +607,48 @@ app.get("/inventory-events", authMiddleware, requireAdmin, async (_req, res) => 
   } catch (err) {
     console.error("Fetch inventory events failed:", err.message);
     res.status(500).json({ error: "Could not fetch inventory events" });
+  }
+});
+
+app.get("/dashboard", authMiddleware, async (_req, res) => {
+  try {
+    const [[itemsRow]] = await pool.query(
+      "SELECT COALESCE(SUM(quantity), 0) AS totalItems FROM items"
+    );
+    const [[salesRow]] = await pool.query(
+      "SELECT COALESCE(SUM(total), 0) AS totalSales FROM orders WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"
+    );
+    const [recentSales] = await pool.query(
+      `
+      SELECT
+        o.id AS orderId,
+        o.total,
+        o.created_at AS createdAt,
+        COALESCE(SUM(oi.quantity), 0) AS itemsCount,
+        u.email AS userEmail
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN users u ON u.id = o.user_id
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+      LIMIT 20
+      `
+    );
+
+    res.json({
+      totalItems: Number(itemsRow?.totalItems || 0),
+      totalSalesLast24h: Number(salesRow?.totalSales || 0),
+      recentSales: recentSales.map((row) => ({
+        orderId: row.orderId,
+        total: Number(row.total || 0),
+        createdAt: row.createdAt,
+        itemsCount: Number(row.itemsCount || 0),
+        userEmail: row.userEmail || "",
+      })),
+    });
+  } catch (err) {
+    console.error("Dashboard stats failed:", err.message);
+    res.status(500).json({ error: "Could not fetch dashboard stats" });
   }
 });
 

@@ -6,16 +6,16 @@ import {
   createStore,
   updateStore,
   deleteStore,
-  fetchUsers,
-  updateUserRole,
-  fetchInventoryEvents,
+  fetchDashboard,
 } from "../api";
 
-const AdminDashboard = () => {
+const Dashboard = () => {
   const [stores, setStores] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [storeFilter, setStoreFilter] = useState("all");
+  const [summary, setSummary] = useState({
+    totalItems: 0,
+    totalSalesLast24h: 0,
+    recentSales: [],
+  });
   const [newStoreName, setNewStoreName] = useState("");
   const [newStoreLocation, setNewStoreLocation] = useState("");
   const [editStoreId, setEditStoreId] = useState(null);
@@ -27,25 +27,22 @@ const AdminDashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, u, ev] = await Promise.all([
-          fetchStores(),
-          fetchUsers(),
-          fetchInventoryEvents(),
-        ]);
+        const [s, dashboard] = await Promise.all([fetchStores(), fetchDashboard()]);
         setStores(s || []);
-        setUsers(u || []);
-        setEvents(ev || []);
+        setSummary({
+          totalItems: Number(dashboard?.totalItems || 0),
+          totalSalesLast24h: Number(dashboard?.totalSalesLast24h || 0),
+          recentSales: dashboard?.recentSales || [],
+        });
       } catch (err) {
-        setStatus(err.message || "Failed to load admin data");
+        setStatus(err.message || "Failed to load dashboard data");
         setStatusType("error");
       }
     };
     load();
   }, []);
 
-  const filteredEvents = useMemo(() => {
-    return events.filter((e) => (storeFilter === "all" ? true : e.storeId === Number(storeFilter)));
-  }, [events, storeFilter]);
+  const recentSales = useMemo(() => summary.recentSales || [], [summary]);
 
   const handleAddStore = async (e) => {
     e.preventDefault();
@@ -95,24 +92,14 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleUserRole = async (id, role) => {
-    try {
-      await updateUserRole(id, role);
-      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
-      setStatus("User role updated");
-      setStatusType("success");
-    } catch (err) {
-      setStatus(err.message || "Could not update user");
-      setStatusType("error");
-    }
-  };
-
   return (
     <div className="admin-dashboard container">
       <div className="admin-dashboard-header">
         <div className="admin-header-copy">
-          <h1 className="admin-dashboard-title">Admin dashboard</h1>
-          <p className="admin-dashboard-subtitle">Manage stores, users, and inventory events.</p>
+          <h1 className="admin-dashboard-title">Dashboard</h1>
+          <p className="admin-dashboard-subtitle">
+            A quick pulse on inventory, sales activity, and store operations.
+          </p>
         </div>
         <div className="admin-dashboard-stats">
           <div className="admin-stat-pill">
@@ -120,12 +107,14 @@ const AdminDashboard = () => {
             <span className="admin-stat-value">{stores.length}</span>
           </div>
           <div className="admin-stat-pill">
-            <span className="admin-stat-label">Users</span>
-            <span className="admin-stat-value">{users.length}</span>
+            <span className="admin-stat-label">Total items</span>
+            <span className="admin-stat-value">{summary.totalItems}</span>
           </div>
           <div className="admin-stat-pill">
-            <span className="admin-stat-label">Events</span>
-            <span className="admin-stat-value">{events.length}</span>
+            <span className="admin-stat-label">Sales (24h)</span>
+            <span className="admin-stat-value">
+              ${Number(summary.totalSalesLast24h || 0).toFixed(2)}
+            </span>
           </div>
         </div>
       </div>
@@ -136,52 +125,41 @@ const AdminDashboard = () => {
         <div className="admin-grid-main">
           <section className="admin-card">
             <div className="admin-card-header">
-              <h2 className="admin-card-title">Inventory events</h2>
-              <div className="admin-inline-controls">
-                <label className="form-label" htmlFor="event-store-filter">
-                  Store
-                </label>
-                <select
-                  id="event-store-filter"
-                  className="form-input"
-                  value={storeFilter}
-                  onChange={(e) => setStoreFilter(e.target.value)}
-                >
-                  <option value="all">All</option>
-                  {stores.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <h2 className="admin-card-title">Recent sales</h2>
             </div>
             <div className="inventory-preview-wrapper">
               <table className="inventory-preview-table">
                 <thead>
                   <tr>
                     <th>Time</th>
-                    <th>Action</th>
-                    <th>SKU</th>
-                    <th>Detail</th>
-                    <th>Delta</th>
+                    <th>Order</th>
+                    <th>Items</th>
+                    <th>Customer</th>
+                    <th>Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEvents.map((ev) => (
-                    <tr key={ev.id}>
-                      <td>{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : ""}</td>
-                      <td>{ev.action}</td>
-                      <td>{ev.sku || ""}</td>
-                      <td>{ev.detail || ""}</td>
-                      <td>{ev.delta}</td>
+                  {recentSales.map((sale) => (
+                    <tr key={sale.orderId}>
+                      <td>{sale.createdAt ? new Date(sale.createdAt).toLocaleString() : ""}</td>
+                      <td>#{sale.orderId}</td>
+                      <td>{sale.itemsCount}</td>
+                      <td>{sale.userEmail || "Guest"}</td>
+                      <td>${Number(sale.total || 0).toFixed(2)}</td>
                     </tr>
                   ))}
+                  {recentSales.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: "center" }}>
+                        No sales yet.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
               <div className="inventory-feed-footer">
-                <Link to="/inventory-history" className="btn-ghost">
-                  Open inventory history
+                <Link to="/purchase-history" className="btn-ghost">
+                  View purchase history
                 </Link>
               </div>
             </div>
@@ -263,48 +241,9 @@ const AdminDashboard = () => {
             )}
           </section>
         </div>
-
-        <div className="admin-grid-side">
-          <section className="admin-card">
-            <div className="admin-card-header">
-              <h2 className="admin-card-title">Users</h2>
-            </div>
-            <table className="inventory-preview-table">
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id}>
-                    <td>{u.email}</td>
-                    <td>
-                      {(u.firstName || "") + " " + (u.lastName || "")}
-                    </td>
-                    <td>{u.role}</td>
-                    <td>
-                      <select
-                        className="form-input"
-                        value={u.role}
-                        onChange={(e) => handleUserRole(u.id, e.target.value)}
-                      >
-                        <option value="admin">Admin</option>
-                        <option value="employee">Employee</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </div>
       </div>
     </div>
   );
 };
 
-export default AdminDashboard;
+export default Dashboard;

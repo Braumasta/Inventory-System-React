@@ -112,7 +112,7 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
   const mobileToggleRef = useRef(null);
 
   const isOnInventory = location.pathname.startsWith("/inventory");
-  const isOnAdmin = location.pathname.startsWith("/admin");
+  const isOnDashboard = location.pathname.startsWith("/dashboard");
 
   const toggleTheme = () => {
     onThemeChange(theme === "light" ? "dark" : "light");
@@ -191,11 +191,11 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
           {user && (
             <>
               <Link
-                to="/admin"
+                to="/dashboard"
                 className="nav-link"
-                style={isOnAdmin ? { fontWeight: 600 } : {}}
+                style={isOnDashboard ? { fontWeight: 600 } : {}}
               >
-                Admin Dashboard
+                Dashboard
               </Link>
               <Link
                 to="/inventory"
@@ -244,17 +244,14 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
                   <div className="dropdown-header">
                     <div style={{ fontWeight: 600 }}>{user.name}</div>
                     <div className="dropdown-subtitle">{user.email}</div>
-                    <div className="dropdown-badge">
-                      {user.role === "admin" ? "Admin" : "Employee"}
-                    </div>
                   </div>
 
                   <Link
-                    to="/admin"
+                    to="/dashboard"
                     className="dropdown-item"
                     onClick={() => setProfileOpen(false)}
                   >
-                    Admin Dashboard
+                    Dashboard
                   </Link>
                   <Link
                     to="/inventory"
@@ -348,11 +345,11 @@ const Navbar = ({ theme, onThemeChange, user, onSignOut }) => {
           {user && (
             <>
               <Link
-                to="/admin"
+                to="/dashboard"
                 className="nav-mobile-link"
                 onClick={() => setMobileOpen(false)}
               >
-                Admin Dashboard
+                Dashboard
               </Link>
               <Link
                 to="/inventory"
