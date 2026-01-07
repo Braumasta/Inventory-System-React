@@ -52,7 +52,7 @@ function App() {
         handleSignOut();
       })
       .finally(() => setAuthLoading(false));
-  }, []);
+  }, [theme]);
 
   // Whenever theme changes, update <html data-theme="...">
   useEffect(() => {
