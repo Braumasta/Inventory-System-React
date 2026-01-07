@@ -33,7 +33,6 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
     const savedToken = loadToken();
     if (!savedToken) {
       setAuthLoading(false);
@@ -49,10 +48,11 @@ function App() {
         setUser(nextUser);
       })
       .catch(() => {
-        handleSignOut();
+        setUser(null);
+        removeToken();
       })
       .finally(() => setAuthLoading(false));
-  }, [theme]);
+  }, []);
 
   // Whenever theme changes, update <html data-theme="...">
   useEffect(() => {
