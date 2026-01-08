@@ -10,6 +10,7 @@ const AuthPage = ({ onSignIn }) => {
   // Sign in state
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
 
   // Sign up state
   const [firstName, setFirstName] = useState("");
@@ -19,6 +20,8 @@ const AuthPage = ({ onSignIn }) => {
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("");
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showSignUpConfirmPassword, setShowSignUpConfirmPassword] = useState(false);
 
   const [error, setError] = useState("");
 
@@ -190,15 +193,24 @@ const AuthPage = ({ onSignIn }) => {
                 <label className="form-label" htmlFor="signin-password">
                   Password
                 </label>
-                <input
-                  id="signin-password"
-                  type="password"
-                  className="form-input"
-                  placeholder="Your password"
-                  value={signInPassword}
-                  onChange={(e) => setSignInPassword(e.target.value)}
-                  required
-                />
+                <div className="password-row">
+                  <input
+                    id="signin-password"
+                    type={showSignInPassword ? "text" : "password"}
+                    className="form-input"
+                    placeholder="Your password"
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowSignInPassword((prev) => !prev)}
+                  >
+                    {showSignInPassword ? "Hide" : "View"}
+                  </button>
+                </div>
               </div>
 
               <button type="submit" className="btn-primary auth-submit-btn">
@@ -293,15 +305,24 @@ const AuthPage = ({ onSignIn }) => {
                   <label className="form-label" htmlFor="signup-password">
                     Password
                   </label>
-                  <input
-                    id="signup-password"
-                    type="password"
-                    className="form-input"
-                    placeholder="At least 8 characters"
-                    value={signUpPassword}
-                    onChange={(e) => setSignUpPassword(e.target.value)}
-                    required
-                  />
+                  <div className="password-row">
+                    <input
+                      id="signup-password"
+                      type={showSignUpPassword ? "text" : "password"}
+                      className="form-input"
+                      placeholder="At least 8 characters"
+                      value={signUpPassword}
+                      onChange={(e) => setSignUpPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowSignUpPassword((prev) => !prev)}
+                    >
+                      {showSignUpPassword ? "Hide" : "View"}
+                    </button>
+                  </div>
                 </div>
                 <div className="form-row">
                   <label
@@ -310,17 +331,26 @@ const AuthPage = ({ onSignIn }) => {
                   >
                     Confirm password
                   </label>
-                  <input
-                    id="signup-confirm-password"
-                    type="password"
-                    className="form-input"
-                    placeholder="Repeat password"
-                    value={signUpConfirmPassword}
-                    onChange={(e) =>
-                      setSignUpConfirmPassword(e.target.value)
-                    }
-                    required
-                  />
+                  <div className="password-row">
+                    <input
+                      id="signup-confirm-password"
+                      type={showSignUpConfirmPassword ? "text" : "password"}
+                      className="form-input"
+                      placeholder="Repeat password"
+                      value={signUpConfirmPassword}
+                      onChange={(e) =>
+                        setSignUpConfirmPassword(e.target.value)
+                      }
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowSignUpConfirmPassword((prev) => !prev)}
+                    >
+                      {showSignUpConfirmPassword ? "Hide" : "View"}
+                    </button>
+                  </div>
                 </div>
               </div>
 

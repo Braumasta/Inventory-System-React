@@ -3,10 +3,25 @@ import "../styles/AccountDetails.css";
 import { updateProfile, fetchMe } from "../api";
 
 const AccountDetails = ({ user, onUpdateUser }) => {
+  const normalizeDob = (value) => {
+    if (!value) return "";
+    if (value instanceof Date && !Number.isNaN(value.valueOf())) {
+      return value.toISOString().slice(0, 10);
+    }
+    if (typeof value === "string") {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.valueOf())) {
+        return parsed.toISOString().slice(0, 10);
+      }
+    }
+    return "";
+  };
+
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
-  const [dob, setDob] = useState(user?.dob || "");
+  const [dob, setDob] = useState(normalizeDob(user?.dob));
   const [avatarPreview, setAvatarPreview] = useState(user?.avatarUrl || "");
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("info");
@@ -15,7 +30,7 @@ const AccountDetails = ({ user, onUpdateUser }) => {
     setFirstName(user?.firstName || "");
     setMiddleName(user?.middleName || "");
     setLastName(user?.lastName || "");
-    setDob(user?.dob || "");
+    setDob(normalizeDob(user?.dob));
     setAvatarPreview(user?.avatarUrl || "");
   }, [user]);
 
