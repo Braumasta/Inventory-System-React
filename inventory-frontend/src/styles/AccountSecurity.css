@@ -48,6 +48,33 @@
   gap: 0.6rem;
 }
 
+.security-password-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.security-password-toggle {
+  border-radius: 0.7rem;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.security-password-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.verify-btn {
+  height: 42px;
+  padding: 0 0.9rem;
+}
+
 .security-delete {
   display: grid;
   gap: 0.6rem;
@@ -193,6 +220,14 @@
 }
 
 @media (max-width: 600px) {
+  .security-password-row {
+    grid-template-columns: 1fr;
+  }
+
+  .verify-btn {
+    width: 100%;
+  }
+
   .security-status {
     grid-column: 1 / -1;
     order: 3;

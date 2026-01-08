@@ -25,8 +25,10 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-export const fetchItems = () =>
-  fetch(`${API_BASE}/items`, { headers: authHeaders() }).then(handleResponse);
+export const fetchItems = (storeId) => {
+  const qs = storeId ? `?storeId=${encodeURIComponent(storeId)}` : "";
+  return fetch(`${API_BASE}/items${qs}`, { headers: authHeaders() }).then(handleResponse);
+};
 
 export const createItem = (payload) =>
   fetch(`${API_BASE}/items`, {
@@ -79,6 +81,13 @@ export const changePassword = (currentPassword, newPassword) =>
     method: "POST",
     headers: { ...jsonHeaders, ...authHeaders() },
     body: JSON.stringify({ currentPassword, newPassword }),
+  }).then(handleResponse);
+
+export const verifyPassword = (currentPassword) =>
+  fetch(`${API_BASE}/auth/password/verify`, {
+    method: "POST",
+    headers: { ...jsonHeaders, ...authHeaders() },
+    body: JSON.stringify({ currentPassword }),
   }).then(handleResponse);
 
 export const deleteAccount = () =>

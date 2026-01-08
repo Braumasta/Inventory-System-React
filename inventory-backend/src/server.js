@@ -26,6 +26,23 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 
+const normalizeDateInput = (value) => {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.valueOf())) {
+    return value.toISOString().slice(0, 10);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const parsed = new Date(trimmed);
+    if (!Number.isNaN(parsed.valueOf())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+  }
+  return null;
+};
+
 const ensureSchema = async () => {
   const ensureColumn = async (table, column, definition) => {
     const [cols] = await pool.query(
@@ -192,6 +209,7 @@ app.post("/auth/register", async (req, res) => {
     return res.status(400).json({ error: "Email and password are required" });
   }
   try {
+    const normalizedDob = normalizeDateInput(dob);
     const hash = await bcrypt.hash(password, 10);
     const [result] = await pool.query(
       "INSERT INTO users (email, password_hash, first_name, middle_name, last_name, dob, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -201,7 +219,7 @@ app.post("/auth/register", async (req, res) => {
         firstName || "",
         middleName || "",
         lastName || "",
-        dob || null,
+        normalizedDob,
         avatarUrl || null,
       ]
     );
@@ -211,7 +229,7 @@ app.post("/auth/register", async (req, res) => {
       firstName: firstName || "",
       middleName: middleName || "",
       lastName: lastName || "",
-      dob: dob || null,
+      dob: normalizedDob,
       avatarUrl: avatarUrl || null,
     };
     await pool.query(
@@ -236,7 +254,7 @@ app.post("/auth/login", async (req, res) => {
   }
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, password_hash, first_name, middle_name, last_name, dob, avatar_url FROM users WHERE email = ?",
+      "SELECT id, email, password_hash, first_name, middle_name, last_name, DATE_FORMAT(dob, '%Y-%m-%d') AS dob, avatar_url FROM users WHERE email = ?",
       [email.toLowerCase()]
     );
     if (!rows.length) return res.status(401).json({ error: "Invalid credentials" });
@@ -266,7 +284,7 @@ app.post("/auth/login", async (req, res) => {
 app.get("/me", authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, email, first_name AS firstName, middle_name AS middleName, last_name AS lastName, dob, avatar_url AS avatarUrl FROM users WHERE id = ?",
+      "SELECT id, email, first_name AS firstName, middle_name AS middleName, last_name AS lastName, DATE_FORMAT(dob, '%Y-%m-%d') AS dob, avatar_url AS avatarUrl FROM users WHERE id = ?",
       [req.user?.sub]
     );
     if (!rows.length) return res.status(404).json({ error: "User not found" });
@@ -280,9 +298,10 @@ app.get("/me", authMiddleware, async (req, res) => {
 app.put("/me", authMiddleware, async (req, res) => {
   const { firstName = "", middleName = "", lastName = "", dob = null, avatarUrl = null } = req.body || {};
   try {
+    const normalizedDob = normalizeDateInput(dob);
     await pool.query(
       "UPDATE users SET first_name = ?, middle_name = ?, last_name = ?, dob = ?, avatar_url = ? WHERE id = ?",
-      [firstName, middleName, lastName, dob || null, avatarUrl, req.user?.sub]
+      [firstName, middleName, lastName, normalizedDob, avatarUrl, req.user?.sub]
     );
     res.json({ success: true });
   } catch (err) {
@@ -332,12 +351,57 @@ app.post("/auth/password", authMiddleware, async (req, res) => {
   }
 });
 
-// Items
-app.get("/items", authMiddleware, async (req, res) => {
+app.post("/auth/password/verify", authMiddleware, async (req, res) => {
+  const { currentPassword } = req.body || {};
+  if (!currentPassword) return res.status(400).json({ error: "Current password required" });
   try {
     const [rows] = await pool.query(
-      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, store_id AS storeId, created_at FROM items WHERE user_id = ? ORDER BY id DESC LIMIT 200",
-      [req.user?.sub || 0]
+      "SELECT password_hash FROM users WHERE id = ?",
+      [req.user?.sub]
+    );
+    if (!rows.length) return res.status(404).json({ error: "User not found" });
+    const ok = await bcrypt.compare(currentPassword || "", rows[0].password_hash);
+    if (!ok) return res.status(401).json({ error: "Current password incorrect" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Password verify failed:", err.message);
+    res.status(500).json({ error: "Could not verify password" });
+  }
+});
+
+// Items
+app.get("/items", authMiddleware, async (req, res) => {
+  const storeId = Number(req.query?.storeId);
+  const hasStoreFilter = Number.isFinite(storeId) && storeId > 0;
+  const whereClauses = ["i.user_id = ?"];
+  const params = [req.user?.sub || 0];
+  if (hasStoreFilter) {
+    whereClauses.push("i.store_id = ?");
+    params.push(storeId);
+  }
+  try {
+    const [rows] = await pool.query(
+      `
+      SELECT
+        i.id,
+        i.sku,
+        i.name,
+        i.category,
+        i.quantity,
+        i.location,
+        i.price,
+        i.image_url AS imageUrl,
+        i.store_id AS storeId,
+        s.name AS storeName,
+        s.location AS storeLocation,
+        i.created_at
+      FROM items i
+      LEFT JOIN stores s ON s.id = i.store_id
+      WHERE ${whereClauses.join(" AND ")}
+      ORDER BY i.id DESC
+      LIMIT 200
+      `,
+      params
     );
     res.json(rows);
   } catch (err) {
@@ -394,7 +458,24 @@ app.post("/items", authMiddleware, async (req, res) => {
     ];
     const [result] = await pool.query(sql, params);
     const [rows] = await pool.query(
-      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, created_at FROM items WHERE id = ? AND user_id = ?",
+      `
+      SELECT
+        i.id,
+        i.sku,
+        i.name,
+        i.category,
+        i.quantity,
+        i.location,
+        i.price,
+        i.image_url AS imageUrl,
+        i.store_id AS storeId,
+        s.name AS storeName,
+        s.location AS storeLocation,
+        i.created_at
+      FROM items i
+      LEFT JOIN stores s ON s.id = i.store_id
+      WHERE i.id = ? AND i.user_id = ?
+      `,
       [result.insertId, req.user?.sub || 0]
     );
     res.status(201).json(rows[0]);
@@ -436,7 +517,24 @@ app.put("/items/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Item not found" });
     }
     const [rows] = await pool.query(
-      "SELECT id, sku, name, category, quantity, location, price, image_url AS imageUrl, created_at FROM items WHERE id = ? AND user_id = ?",
+      `
+      SELECT
+        i.id,
+        i.sku,
+        i.name,
+        i.category,
+        i.quantity,
+        i.location,
+        i.price,
+        i.image_url AS imageUrl,
+        i.store_id AS storeId,
+        s.name AS storeName,
+        s.location AS storeLocation,
+        i.created_at
+      FROM items i
+      LEFT JOIN stores s ON s.id = i.store_id
+      WHERE i.id = ? AND i.user_id = ?
+      `,
       [id, req.user?.sub || 0]
     );
     res.json(rows[0]);
@@ -452,15 +550,34 @@ app.put("/items/:id", authMiddleware, async (req, res) => {
 app.delete("/items/:id", authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
   if (!id) return res.status(400).json({ error: "Invalid id" });
+  const conn = await pool.getConnection();
   try {
-    const [result] = await pool.query("DELETE FROM items WHERE id = ? AND user_id = ?", [id, req.user?.sub || 0]);
+    await conn.beginTransaction();
+    await conn.query(
+      `
+      DELETE oi
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      WHERE oi.item_id = ? AND o.user_id = ?
+      `,
+      [id, req.user?.sub || 0]
+    );
+    const [result] = await conn.query("DELETE FROM items WHERE id = ? AND user_id = ?", [
+      id,
+      req.user?.sub || 0,
+    ]);
     if (result.affectedRows === 0) {
+      await conn.rollback();
       return res.status(404).json({ error: "Item not found" });
     }
+    await conn.commit();
     res.json({ success: true });
   } catch (err) {
+    await conn.rollback();
     console.error("Failed to delete item:", err.message);
     res.status(500).json({ error: "Could not delete item" });
+  } finally {
+    conn.release();
   }
 });
 

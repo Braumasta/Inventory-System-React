@@ -17,6 +17,7 @@ const initialColumns = [
   "Name",
   "Category",
   "Quantity",
+  "Store",
   "Location",
   "Price",
 ];
@@ -29,10 +30,11 @@ const mapApiItemToRow = (item) => ({
   Name: item.name || "",
   Category: item.category || "",
   Quantity: Number(item.quantity) || 0,
-  Location: item.location || "",
+  Location: item.storeLocation || item.location || "",
   Price: Number(item.price) || 0,
   Image: item.imageUrl || "",
   StoreId: item.storeId || null,
+  Store: item.storeName || "",
 });
 
 const mapRowToApiPayload = (row, fallbackStoreId = null) => ({
@@ -73,6 +75,7 @@ const InventoryPage = ({ user }) => {
   const [, setHistoryEntries] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [imageModal, setImageModal] = useState(null);
   const [newProductSku, setNewProductSku] = useState("");
   const [newProductName, setNewProductName] = useState("");
   const [newProductPrice, setNewProductPrice] = useState(0);
@@ -82,10 +85,19 @@ const InventoryPage = ({ user }) => {
   const [newProductImage, setNewProductImage] = useState("");
   const [dirty, setDirty] = useState(false);
 
-  const refreshItems = async () => {
+  const storeLookup = useMemo(
+    () =>
+      stores.reduce((acc, store) => {
+        acc.set(store.id, store);
+        return acc;
+      }, new Map()),
+    [stores]
+  );
+
+  const refreshItems = async (storeId = null) => {
     setLoading(true);
     try {
-      const data = await fetchItems();
+      const data = await fetchItems(storeId || null);
       setRows(data.map(mapApiItemToRow));
       setDirty(false);
       setError("");
@@ -136,7 +148,6 @@ const InventoryPage = ({ user }) => {
   };
 
   useEffect(() => {
-    refreshItems();
     fetchStores()
       .then((data) => {
         setStores(data || []);
@@ -150,6 +161,10 @@ const InventoryPage = ({ user }) => {
     setLogEntries([]);
     setHistoryEntries([]);
   }, []);
+
+  useEffect(() => {
+    refreshItems(selectedStoreId);
+  }, [selectedStoreId]);
 
   const addHistoryEntry = (action, payload = {}) => {
     const entry = {
@@ -193,6 +208,17 @@ const InventoryPage = ({ user }) => {
   const locations = useMemo(
     () => Array.from(new Set(rows.map((r) => r.Location || ""))).filter(Boolean),
     [rows]
+  );
+  const storeLocationOptions = useMemo(
+    () =>
+      stores
+        .map((store) => ({
+          id: store.id,
+          label: store.location ? `${store.name} · ${store.location}` : store.name,
+          location: store.location || "",
+        }))
+        .filter((store) => store.label),
+    [stores]
   );
 
   const upsertCartItem = (sku, qty = 1) => {
@@ -382,20 +408,41 @@ const InventoryPage = ({ user }) => {
     }
   };
 
-  const handleImageFile = (rowIndex, file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result;
-      if (result) {
-        handleCellChange(rowIndex, "Image", result.toString());
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleStoreChange = (id) => {
     setSelectedStoreId(Number(id) || null);
+  };
+
+  const handleRowStoreChange = (rowIndex, id) => {
+    const storeId = Number(id) || null;
+    const store = storeLookup.get(storeId);
+    setRows((prev) => {
+      const next = [...prev];
+      next[rowIndex] = {
+        ...next[rowIndex],
+        StoreId: storeId,
+        Store: store?.name || "",
+        Location: store?.location || "",
+      };
+      return next;
+    });
+    setDirty(true);
+  };
+
+  const handleNewLocationChange = (value) => {
+    setNewProductLocation(value);
+    const match = stores.find((store) => (store.location || "") === value);
+    setSelectedStoreId(match ? match.id : null);
+  };
+
+  const handleImageModalOpen = (rowIndex) => {
+    const current = rows[rowIndex]?.Image || "";
+    setImageModal({ rowIndex, url: current });
+  };
+
+  const handleImageModalSave = () => {
+    if (!imageModal) return;
+    handleCellChange(imageModal.rowIndex, "Image", imageModal.url.trim());
+    setImageModal(null);
   };
 
   const handleAddStore = async (e) => {
@@ -504,7 +551,7 @@ const InventoryPage = ({ user }) => {
             >
               <option value="search">Search</option>
               <option value="category">Category</option>
-              <option value="location">Location</option>
+              <option value="location">Store location</option>
               <option value="price">Price (&lt;=)</option>
             </select>
           </div>
@@ -532,7 +579,7 @@ const InventoryPage = ({ user }) => {
             {filterType === "location" && (
               <div>
                 <label className="form-label" htmlFor="location-filter">
-                  Location
+                  Store location
                 </label>
                 <select
                   id="location-filter"
@@ -574,7 +621,7 @@ const InventoryPage = ({ user }) => {
               <span className="chip chip-active">
                 {filterType === "search" && (search || "Search")}
                 {filterType === "category" && `Category: ${categoryFilter}`}
-                {filterType === "location" && `Location: ${locationFilter}`}
+                {filterType === "location" && `Store location: ${locationFilter}`}
                 {filterType === "price" && `Price <= $${priceCeiling}`}
                 <button
                   className="chip-close"
@@ -664,42 +711,62 @@ const InventoryPage = ({ user }) => {
                         const isQuantity = col === "Quantity";
                         const isPrice = col === "Price";
                         const isImage = col === "Image";
+                        const isStore = col === "Store";
+                        const isLocation = col === "Location";
 
                         if (isImage) {
                           return (
                             <td key={col} data-label={col}>
                               {value ? (
-                                <label className="thumb-upload-button">
+                                <button
+                                  type="button"
+                                  className="thumb-upload-button"
+                                  onClick={() => handleImageModalOpen(rowIndex)}
+                                >
                                   <img
                                     src={value}
                                     alt={row.Name || "Product image"}
                                     className="inventory-thumb"
                                   />
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageFile(
-                                        rowIndex,
-                                        e.target.files?.[0] || null
-                                      )
-                                    }
-                                    style={{ display: "none" }}
-                                  />
-                                </label>
+                                </button>
                               ) : (
-                                <label className="inventory-thumb placeholder upload-thumb">
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageFile(rowIndex, e.target.files?.[0] || null)
-                                    }
-                                    style={{ display: "none" }}
-                                  />
-                                  <span className="upload-hint">Upload</span>
-                                </label>
+                                <button
+                                  type="button"
+                                  className="inventory-thumb placeholder upload-thumb"
+                                  onClick={() => handleImageModalOpen(rowIndex)}
+                                >
+                                  <span className="upload-hint">Add image</span>
+                                </button>
                               )}
+                            </td>
+                          );
+                        }
+
+                        if (isStore) {
+                          return (
+                            <td key={col} data-label={col}>
+                              <select
+                                className="inventory-input"
+                                value={row.StoreId || ""}
+                                onChange={(e) => handleRowStoreChange(rowIndex, e.target.value)}
+                              >
+                                <option value="">No store</option>
+                                {stores.map((store) => (
+                                  <option key={store.id} value={store.id}>
+                                    {store.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                          );
+                        }
+
+                        if (isLocation) {
+                          return (
+                            <td key={col} data-label={col}>
+                              <span className="inventory-location">
+                                {value || "—"}
+                              </span>
                             </td>
                           );
                         }
@@ -985,14 +1052,20 @@ const InventoryPage = ({ user }) => {
                 />
               </div>
               <div className="product-field">
-                <label className="form-label" htmlFor="new-location">Location</label>
-                <input
+                <label className="form-label" htmlFor="new-location">Store location</label>
+                <select
                   id="new-location"
                   className="form-input"
-                  placeholder="Aisle 2"
                   value={newProductLocation}
-                  onChange={(e) => setNewProductLocation(e.target.value)}
-                />
+                  onChange={(e) => handleNewLocationChange(e.target.value)}
+                >
+                  <option value="">Select store location</option>
+                  {storeLocationOptions.map((store) => (
+                    <option key={store.id} value={store.location}>
+                      {store.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="product-field">
                 <label className="form-label" htmlFor="new-quantity">Quantity</label>
@@ -1040,7 +1113,12 @@ const InventoryPage = ({ user }) => {
                   id="new-store"
                   className="form-input"
                   value={selectedStoreId || ""}
-                  onChange={(e) => setSelectedStoreId(Number(e.target.value) || null)}
+                  onChange={(e) => {
+                    const next = Number(e.target.value) || null;
+                    setSelectedStoreId(next);
+                    const store = storeLookup.get(next);
+                    setNewProductLocation(store?.location || "");
+                  }}
                 >
                   <option value="">No store</option>
                   {stores.map((s) => (
@@ -1056,6 +1134,43 @@ const InventoryPage = ({ user }) => {
             </button>
           </form>
         </section>
+
+        {imageModal && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h4>Update product image</h4>
+              <div className="image-modal-preview">
+                {imageModal.url ? (
+                  <img src={imageModal.url} alt="Preview" />
+                ) : (
+                  <div className="image-modal-empty">No image selected</div>
+                )}
+              </div>
+              <label className="form-label" htmlFor="image-url-update">
+                Image URL
+              </label>
+              <input
+                id="image-url-update"
+                className="form-input"
+                placeholder="https://example.com/image.jpg"
+                value={imageModal.url}
+                onChange={(e) =>
+                  setImageModal((prev) =>
+                    prev ? { ...prev, url: e.target.value } : prev
+                  )
+                }
+              />
+              <div className="modal-actions">
+                <button className="btn-ghost" onClick={() => setImageModal(null)}>
+                  Cancel
+                </button>
+                <button className="btn-primary" onClick={handleImageModalSave}>
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showDeleteModal && (
           <div className="modal-overlay">
