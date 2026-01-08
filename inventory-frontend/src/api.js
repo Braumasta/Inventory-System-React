@@ -90,6 +90,20 @@ export const verifyPassword = (currentPassword) =>
     body: JSON.stringify({ currentPassword }),
   }).then(handleResponse);
 
+export const requestPasswordReset = (email) =>
+  fetch(`${API_BASE}/auth/reset-request`, {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({ email }),
+  }).then(handleResponse);
+
+export const resetPassword = (email, newPassword) =>
+  fetch(`${API_BASE}/auth/reset-password`, {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({ email, newPassword }),
+  }).then(handleResponse);
+
 export const deleteAccount = () =>
   fetch(`${API_BASE}/me`, {
     method: "DELETE",

@@ -18,7 +18,6 @@ const initialColumns = [
   "Category",
   "Quantity",
   "Store",
-  "Location",
   "Price",
 ];
 
@@ -30,7 +29,6 @@ const mapApiItemToRow = (item) => ({
   Name: item.name || "",
   Category: item.category || "",
   Quantity: Number(item.quantity) || 0,
-  Location: item.storeLocation || item.location || "",
   Price: Number(item.price) || 0,
   Image: item.imageUrl || "",
   StoreId: item.storeId || null,
@@ -42,7 +40,7 @@ const mapRowToApiPayload = (row, fallbackStoreId = null) => ({
   name: row.Name || "",
   category: row.Category || null,
   quantity: Number(row.Quantity) || 0,
-  location: row.Location || null,
+  location: null,
   price: Number(row.Price) || 0,
   imageUrl: row.Image || null,
   storeId: row.StoreId || fallbackStoreId || null,
@@ -65,7 +63,6 @@ const InventoryPage = ({ user }) => {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("search");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [locationFilter, setLocationFilter] = useState("all");
   const [priceCeiling, setPriceCeiling] = useState(100);
   const [manualBarcode, setManualBarcode] = useState("");
   const [manualQuantity, setManualQuantity] = useState(1);
@@ -81,7 +78,6 @@ const InventoryPage = ({ user }) => {
   const [newProductPrice, setNewProductPrice] = useState(0);
   const [newProductQuantity, setNewProductQuantity] = useState(0);
   const [newProductCategory, setNewProductCategory] = useState("");
-  const [newProductLocation, setNewProductLocation] = useState("");
   const [newProductImage, setNewProductImage] = useState("");
   const [dirty, setDirty] = useState(false);
 
@@ -185,12 +181,6 @@ const InventoryPage = ({ user }) => {
           (row.Category || "").toLowerCase() === categoryFilter.toLowerCase()
         );
       }
-      if (filterType === "location") {
-        return (
-          locationFilter === "all" ||
-          (row.Location || "").toLowerCase() === locationFilter.toLowerCase()
-        );
-      }
       if (filterType === "price") {
         return Number(row.Price || 0) <= priceCeiling;
       }
@@ -199,28 +189,12 @@ const InventoryPage = ({ user }) => {
         .toLowerCase()
         .includes(normalizedSearch);
     });
-  }, [rows, search, filterType, categoryFilter, locationFilter, priceCeiling]);
+  }, [rows, search, filterType, categoryFilter, priceCeiling]);
 
   const categories = useMemo(
     () => Array.from(new Set(rows.map((r) => r.Category || ""))).filter(Boolean),
     [rows]
   );
-  const locations = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.Location || ""))).filter(Boolean),
-    [rows]
-  );
-  const storeLocationOptions = useMemo(
-    () =>
-      stores
-        .map((store) => ({
-          id: store.id,
-          label: store.location ? `${store.name} · ${store.location}` : store.name,
-          location: store.location || "",
-        }))
-        .filter((store) => store.label),
-    [stores]
-  );
-
   const upsertCartItem = (sku, qty = 1) => {
     const normalized = sku.trim();
     if (!normalized || qty <= 0) return;
@@ -349,7 +323,7 @@ const InventoryPage = ({ user }) => {
         quantity: Number(newProductQuantity) || 0,
         price: Number(newProductPrice) || 0,
         category: newProductCategory.trim(),
-        location: newProductLocation.trim(),
+        location: null,
         imageUrl: newProductImage.trim(),
         storeId: selectedStoreId || null,
       });
@@ -359,7 +333,6 @@ const InventoryPage = ({ user }) => {
       setNewProductPrice(0);
       setNewProductQuantity(0);
       setNewProductCategory("");
-      setNewProductLocation("");
       setNewProductImage("");
       await refreshItems();
     } catch (err) {
@@ -421,17 +394,10 @@ const InventoryPage = ({ user }) => {
         ...next[rowIndex],
         StoreId: storeId,
         Store: store?.name || "",
-        Location: store?.location || "",
       };
       return next;
     });
     setDirty(true);
-  };
-
-  const handleNewLocationChange = (value) => {
-    setNewProductLocation(value);
-    const match = stores.find((store) => (store.location || "") === value);
-    setSelectedStoreId(match ? match.id : null);
   };
 
   const handleImageModalOpen = (rowIndex) => {
@@ -546,12 +512,10 @@ const InventoryPage = ({ user }) => {
                 setFilterType(next);
                 setSearch("");
                 setCategoryFilter("all");
-                setLocationFilter("all");
               }}
             >
               <option value="search">Search</option>
               <option value="category">Category</option>
-              <option value="location">Store location</option>
               <option value="price">Price (&lt;=)</option>
             </select>
           </div>
@@ -571,26 +535,6 @@ const InventoryPage = ({ user }) => {
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {filterType === "location" && (
-              <div>
-                <label className="form-label" htmlFor="location-filter">
-                  Store location
-                </label>
-                <select
-                  id="location-filter"
-                  className="form-input"
-                  value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
-                >
-                  <option value="all">All</option>
-                  {locations.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {loc}
                     </option>
                   ))}
                 </select>
@@ -621,7 +565,6 @@ const InventoryPage = ({ user }) => {
               <span className="chip chip-active">
                 {filterType === "search" && (search || "Search")}
                 {filterType === "category" && `Category: ${categoryFilter}`}
-                {filterType === "location" && `Store location: ${locationFilter}`}
                 {filterType === "price" && `Price <= $${priceCeiling}`}
                 <button
                   className="chip-close"
@@ -629,7 +572,6 @@ const InventoryPage = ({ user }) => {
                     setFilterType("search");
                     setSearch("");
                     setCategoryFilter("all");
-                    setLocationFilter("all");
                   }}
                   aria-label="Clear filter"
                 >
@@ -712,7 +654,6 @@ const InventoryPage = ({ user }) => {
                         const isPrice = col === "Price";
                         const isImage = col === "Image";
                         const isStore = col === "Store";
-                        const isLocation = col === "Location";
 
                         if (isImage) {
                           return (
@@ -757,16 +698,6 @@ const InventoryPage = ({ user }) => {
                                   </option>
                                 ))}
                               </select>
-                            </td>
-                          );
-                        }
-
-                        if (isLocation) {
-                          return (
-                            <td key={col} data-label={col}>
-                              <span className="inventory-location">
-                                {value || "—"}
-                              </span>
                             </td>
                           );
                         }
@@ -1052,22 +983,6 @@ const InventoryPage = ({ user }) => {
                 />
               </div>
               <div className="product-field">
-                <label className="form-label" htmlFor="new-location">Store location</label>
-                <select
-                  id="new-location"
-                  className="form-input"
-                  value={newProductLocation}
-                  onChange={(e) => handleNewLocationChange(e.target.value)}
-                >
-                  <option value="">Select store location</option>
-                  {storeLocationOptions.map((store) => (
-                    <option key={store.id} value={store.location}>
-                      {store.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="product-field">
                 <label className="form-label" htmlFor="new-quantity">Quantity</label>
                 <input
                   id="new-quantity"
@@ -1116,8 +1031,6 @@ const InventoryPage = ({ user }) => {
                   onChange={(e) => {
                     const next = Number(e.target.value) || null;
                     setSelectedStoreId(next);
-                    const store = storeLookup.get(next);
-                    setNewProductLocation(store?.location || "");
                   }}
                 >
                   <option value="">No store</option>
