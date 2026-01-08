@@ -369,43 +369,6 @@ app.post("/auth/password/verify", authMiddleware, async (req, res) => {
   }
 });
 
-app.post("/auth/reset-request", async (req, res) => {
-  const email = (req.body?.email || "").toString().trim().toLowerCase();
-  if (!email) return res.status(400).json({ error: "Email required" });
-  try {
-    const [rows] = await pool.query("SELECT id FROM users WHERE email = ? LIMIT 1", [
-      email,
-    ]);
-    if (!rows.length) return res.status(404).json({ error: "Email not found" });
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Reset request failed:", err.message);
-    res.status(500).json({ error: "Could not process reset request" });
-  }
-});
-
-app.post("/auth/reset-password", async (req, res) => {
-  const email = (req.body?.email || "").toString().trim().toLowerCase();
-  const newPassword = (req.body?.newPassword || "").toString();
-  if (!email) return res.status(400).json({ error: "Email required" });
-  if (!newPassword) return res.status(400).json({ error: "New password required" });
-  if (newPassword.length < 8) {
-    return res.status(400).json({ error: "Password must be at least 8 characters" });
-  }
-  try {
-    const [rows] = await pool.query("SELECT id FROM users WHERE email = ? LIMIT 1", [
-      email,
-    ]);
-    if (!rows.length) return res.status(404).json({ error: "Email not found" });
-    const hash = await bcrypt.hash(newPassword, 10);
-    await pool.query("UPDATE users SET password_hash = ? WHERE email = ?", [hash, email]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Reset password failed:", err.message);
-    res.status(500).json({ error: "Could not reset password" });
-  }
-});
-
 // Items
 app.get("/items", authMiddleware, async (req, res) => {
   const storeId = Number(req.query?.storeId);

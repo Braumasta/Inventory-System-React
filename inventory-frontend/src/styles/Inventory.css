@@ -707,6 +707,11 @@
   margin-top: 0.8rem;
 }
 
+.inventory-location {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .image-modal-preview {
   width: 120px;
   height: 120px;

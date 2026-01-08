@@ -1,25 +1,17 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/AuthPage.css";
-import { requestPasswordReset } from "../api";
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError("");
 
     if (!email.trim()) return;
 
-    try {
-      await requestPasswordReset(email);
-      navigate("/reset-password", { state: { email } });
-    } catch (err) {
-      setError(err.message || "Email not found.");
-    }
+    navigate("/reset-password", { state: { email } });
   };
 
   return (
@@ -33,7 +25,6 @@ const ForgotPasswordPage = () => {
           </p>
         </div>
 
-        {error && <div className="auth-error">{error}</div>}
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-row">
             <label className="form-label" htmlFor="reset-email">

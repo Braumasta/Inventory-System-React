@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../styles/AuthPage.css";
-import { resetPassword } from "../api";
 
 const ResetPasswordPage = () => {
   const location = useLocation();
@@ -13,14 +12,10 @@ const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
 
-    if (!email) {
-      setError("Email is required to reset your password.");
-      return;
-    }
     if (!password || password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -30,12 +25,7 @@ const ResetPasswordPage = () => {
       return;
     }
 
-    try {
-      await resetPassword(email, password);
-      setSubmitted(true);
-    } catch (err) {
-      setError(err.message || "Could not reset password.");
-    }
+    setSubmitted(true);
   };
 
   return (
